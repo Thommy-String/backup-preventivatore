@@ -155,6 +155,27 @@ export function ItemCard({ item: it, onEdit, onDuplicate, onRemove }: Props) {
                                 {(it as any).reference && (
                                     <p className="text-sm text-gray-600 font-medium truncate">{(it as any).reference}</p>
                                 )}
+                                {(() => {
+                                    const orig = Number((it as any).unit_price)
+                                    const disc = Number((it as any).unit_price_discounted)
+                                    const hasOrig = Number.isFinite(orig) && orig > 0
+                                    const hasDisc = Number.isFinite(disc) && disc > 0 && (!hasOrig || disc < orig)
+                                    if (!hasOrig && !hasDisc) return null
+                                    const fmt = (n: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(n)
+                                    return (
+                                        <p className="mt-0.5 text-sm font-semibold text-gray-800 inline-flex items-center gap-2">
+                                            <span className="text-gray-500 font-normal text-xs uppercase tracking-wide">Prezzo cad.</span>
+                                            {hasDisc && hasOrig ? (
+                                                <>
+                                                    <span className="text-red-500 line-through font-medium">{fmt(orig)}</span>
+                                                    <span className="text-emerald-700">{fmt(disc)}</span>
+                                                </>
+                                            ) : (
+                                                <span className="text-emerald-700">{fmt(hasDisc ? disc : orig)}</span>
+                                            )}
+                                        </p>
+                                    )
+                                })()}
                             </div>
 
                             {/* Pulsanti azioni in alto a destra */}

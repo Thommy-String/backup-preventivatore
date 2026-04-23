@@ -102,6 +102,10 @@ function toPlainItem(it: any) {
     title: isStr(it.title) ? it.title : undefined,
     reference: isStr(it.reference) ? it.reference : undefined,
 
+    // prezzo unitario opzionale (€/cad)
+    unit_price: isNum(it.unit_price) ? it.unit_price : undefined,
+    unit_price_discounted: isNum(it.unit_price_discounted) ? it.unit_price_discounted : undefined,
+
     // misure
     width_mm: isNum(it.width_mm) ? it.width_mm : undefined,
     height_mm: isNum(it.height_mm) ? it.height_mm : undefined,
@@ -285,6 +289,7 @@ const [quote, manualTotals, items, profileOverview] = useQuoteStore(
       ? manualTotals.map((r: any) => ({
           label: isStr(r?.label) ? r.label : (isStr(r?.category) ? r.category : "-"),
           amount: isNum(r?.amount) ? r.amount : 0,
+          amount_discounted: isNum(r?.amount_discounted) ? r.amount_discounted : null,
           pieces: isNum((r as any)?.pieces) && (r as any).pieces > 0 ? (r as any).pieces : null,
           surfaces: normalizeSurfaceEntries((r as any)?.surfaces),
         }))

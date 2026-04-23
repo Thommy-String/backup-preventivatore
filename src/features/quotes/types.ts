@@ -103,6 +103,11 @@ export type BaseItem = {
   price_per_mq?: number | null
   price_total?: number | null
 
+  /** Prezzo unitario opzionale (€ per pezzo) — visibile nel PDF e sommabile nel riepilogo costi */
+  unit_price?: number | null
+  /** Prezzo scontato per pezzo (mostra il prezzo originale sbarrato e questo evidenziato) */
+  unit_price_discounted?: number | null
+
   // meta
   notes?: string | null
   reference?: string | null
@@ -262,6 +267,8 @@ export type ManualTotalRow = {
   id: string
   label: string
   amount: number
+  /** Importo scontato per questa singola voce; se presente verrà usato al posto di amount nel totale */
+  amount_discounted?: number | null
   pieces?: number | null
   surfaces?: ManualTotalSurfaceEntry[]
 }

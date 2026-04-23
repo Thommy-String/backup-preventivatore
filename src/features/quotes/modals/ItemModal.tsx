@@ -1,4 +1,4 @@
-import { useMemo, useRef, type ChangeEvent } from "react";
+import { useMemo, useRef, useState, useEffect, type ChangeEvent } from "react";
 import { Button } from "../../../components/ui/Button";
 import { registry } from "../registry";
 import type { QuoteItem } from "../types";
@@ -96,6 +96,90 @@ function CustomFieldsSection({ draft, onChange }: { draft: any; onChange: (next:
       )}
     </section>
   );
+}
+
+// Sezione prezzo unitario + scontato con supporto virgola/punto
+function PriceInputsSection({ draft, onChange }: { draft: any; onChange: (next: any) => void }) {
+  const formatNum = (n: any) => {
+    if (typeof n !== 'number' || !Number.isFinite(n)) return ''
+    // mostra con virgola, senza zeri inutili
+    return String(n).replace('.', ',')
+  }
+  const [origStr, setOrigStr] = useState<string>(formatNum(draft?.unit_price))
+  const [discStr, setDiscStr] = useState<string>(formatNum(draft?.unit_price_discounted))
+
+  // Se il draft cambia (es. cambio voce in editing), risincronizza
+  useEffect(() => { setOrigStr(formatNum(draft?.unit_price)) }, [draft?.id])
+  useEffect(() => { setDiscStr(formatNum(draft?.unit_price_discounted)) }, [draft?.id])
+
+  const ALLOW_RE = /^\d*([.,]\d{0,2})?$/
+
+  const commit = (key: 'unit_price' | 'unit_price_discounted', raw: string) => {
+    if (raw === '') {
+      onChange({ ...(draft as any), [key]: null } as any)
+      return
+    }
+    const normalized = raw.replace(',', '.')
+    const n = Number(normalized)
+    onChange({ ...(draft as any), [key]: Number.isFinite(n) ? n : null } as any)
+  }
+
+  return (
+    <section className="space-y-2">
+      <div className="text-sm font-medium text-gray-600">Prezzo unitario (€/cad)</div>
+
+      <div className="flex items-center gap-2">
+        <input
+          className="input flex-1 sm:flex-none sm:w-48 text-right"
+          type="text"
+          inputMode="decimal"
+          placeholder="0,00"
+          value={origStr}
+          onChange={(e) => {
+            const v = e.target.value
+            if (v === '' || ALLOW_RE.test(v)) {
+              setOrigStr(v)
+              commit('unit_price', v)
+            }
+          }}
+          onBlur={() => {
+            // normalizza visivamente sostituendo punto con virgola
+            const normalized = origStr.replace('.', ',')
+            setOrigStr(normalized)
+          }}
+          onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+        />
+        <span className="text-sm text-gray-500">€ cad.</span>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <input
+          className="input flex-1 sm:flex-none sm:w-48 text-right"
+          type="text"
+          inputMode="decimal"
+          placeholder="Prezzo scontato (opz.)"
+          value={discStr}
+          onChange={(e) => {
+            const v = e.target.value
+            if (v === '' || ALLOW_RE.test(v)) {
+              setDiscStr(v)
+              commit('unit_price_discounted', v)
+            }
+          }}
+          onBlur={() => {
+            const normalized = discStr.replace('.', ',')
+            setDiscStr(normalized)
+          }}
+          onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+        />
+        <span className="text-sm text-gray-500">€ scontato</span>
+      </div>
+
+      <div className="text-xs text-gray-500">
+        Se compili "scontato", il prezzo originale verrà mostrato sbarrato e quello nuovo evidenziato.
+      </div>
+    </section>
+  )
 }
 
 // Crea una cfg cassonetto di fallback dai campi della voce
@@ -405,6 +489,10 @@ export function ItemModal({ draft, editingId, onChange, onCancel, onSave }: Prop
             {/* Form and Custom Fields */}
             <div className="order-2 md:order-2 space-y-4">
               {Form ? <Form draft={draft as any} onChange={onChange as any} /> : null}
+
+              {/* Prezzo unitario (€/cad) — opzionale, sommabile nel riepilogo costi */}
+              <PriceInputsSection draft={draft} onChange={onChange} />
+
               {/* Shared custom fields for every kind tranne le voci custom, porta blindata e porta interna */}
               {draft.kind !== "custom" && draft.kind !== "porta_blindata" && draft.kind !== "porta_interna" ? (
                 <CustomFieldsSection draft={draft as any} onChange={onChange as any} />

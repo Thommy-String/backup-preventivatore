@@ -164,6 +164,28 @@ export function ItemsDetailSection({ companyLogoUrl, brandId, theme, items }: It
                     <Text style={s.itemQty}>{qty}</Text>
                   </View>
                   {reference ? <Text style={s.itemRef}>{reference}</Text> : null}
+                  {(() => {
+                    const orig = Number((it as any)?.unit_price)
+                    const disc = Number((it as any)?.unit_price_discounted)
+                    const hasOrig = Number.isFinite(orig) && orig > 0
+                    const hasDisc = Number.isFinite(disc) && disc > 0 && (!hasOrig || disc < orig)
+                    if (!hasOrig && !hasDisc) return null
+                    const fmt = (n: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(n)
+                    return (
+                      <Text style={[s.itemRef, { color: isEco ? accent : '#374151', fontWeight: 700 }]}> 
+                        Prezzo cad.{' '}
+                        {hasDisc && hasOrig ? (
+                          <>
+                            <Text style={{ color: '#dc2626', textDecoration: 'line-through', fontWeight: 500 }}>{fmt(orig)}</Text>
+                            <Text>  </Text>
+                            <Text style={{ color: accent }}>{fmt(disc)}</Text>
+                          </>
+                        ) : (
+                          <Text>{fmt(hasDisc ? disc : orig)}</Text>
+                        )}
+                      </Text>
+                    )
+                  })()}
                   {pairs.length > 0 && <View style={[s.hr, isEco ? { backgroundColor: '#edf2f7', marginVertical: 10 } : {}]} />}
                   <View style={s.detailGrid}>
                     {pairs.map(([k, v], idx) => (

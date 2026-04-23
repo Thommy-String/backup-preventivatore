@@ -11,6 +11,7 @@ type CostSummarySectionProps = {
   dragTotalId: string | null
   piecesStr: Record<string, string>
   amountStr: Record<string, string>
+  amountDiscStr: Record<string, string>
   totalExcluded: number
   hasDiscount: boolean
   discountedTotal: number
@@ -29,6 +30,8 @@ type CostSummarySectionProps = {
   onPiecesBlur: (id: string) => void
   onAmountChange: (id: string, value: string) => void
   onAmountBlur: (id: string) => void
+  onAmountDiscChange: (id: string, value: string) => void
+  onAmountDiscBlur: (id: string) => void
   onOpenSurfaceModal: (id: string) => void
   onToggleDiscountEditor: () => void
   onSetDiscountMode: (mode: 'pct' | 'final' | null) => void
@@ -43,6 +46,7 @@ export function CostSummarySection({
   dragTotalId,
   piecesStr,
   amountStr,
+  amountDiscStr,
   totalExcluded,
   hasDiscount,
   discountedTotal,
@@ -61,6 +65,8 @@ export function CostSummarySection({
   onPiecesBlur,
   onAmountChange,
   onAmountBlur,
+  onAmountDiscChange,
+  onAmountDiscBlur,
   onOpenSurfaceModal,
   onToggleDiscountEditor,
   onSetDiscountMode,
@@ -156,7 +162,7 @@ export function CostSummarySection({
                     {/* Importo */}
                     <div className="flex-1 sm:flex-none sm:w-40">
                       <input
-                        className="input w-full text-right"
+                        className={`input w-full text-right ${typeof row.amount_discounted === 'number' && row.amount_discounted < row.amount ? 'text-red-600 line-through' : ''}`}
                         type="text"
                         inputMode="decimal"
                         value={amountStr[row.id] ?? (row.amount === 0 ? '' : String(row.amount))}
@@ -165,6 +171,23 @@ export function CostSummarySection({
                         onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
                         onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }}
                         placeholder="0,00"
+                      />
+                    </div>
+                    <span className="hidden sm:inline text-sm text-gray-500">€</span>
+
+                    {/* Importo scontato */}
+                    <div className="flex-1 sm:flex-none sm:w-40">
+                      <input
+                        className="input w-full text-right font-semibold"
+                        type="text"
+                        inputMode="decimal"
+                        value={amountDiscStr[row.id] ?? ''}
+                        onChange={(e) => onAmountDiscChange(row.id, e.target.value)}
+                        onBlur={() => onAmountDiscBlur(row.id)}
+                        onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                        onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }}
+                        placeholder="scontato"
+                        title="Importo scontato (opzionale)"
                       />
                     </div>
                     <span className="hidden sm:inline text-sm text-gray-500">€</span>
@@ -183,9 +206,24 @@ export function CostSummarySection({
                             className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 font-medium text-gray-700"
                           >
                             <span className="text-gray-900">{formatMq(s.mq)}</span>
+                            {s.priceTotal > 0 && (
+                              s.hasDiscount && s.priceTotalDiscounted < s.priceTotal ? (
+                                <span className="inline-flex items-center gap-1">
+                                  <span className="text-gray-400 line-through">· {euro(s.priceTotal)}</span>
+                                  <span className="text-emerald-700 font-semibold">{euro(s.priceTotalDiscounted)}</span>
+                                </span>
+                              ) : (
+                                <span className="text-emerald-700">· {euro(s.priceTotal)}</span>
+                              )
+                            )}
                             {s.missingDimensions > 0 && (
                               <span className="text-[10px] text-amber-700">
                                 · {s.missingDimensions} senza dimensioni
+                              </span>
+                            )}
+                            {s.missingUnitPrice > 0 && (
+                              <span className="text-[10px] text-amber-700">
+                                · {s.missingUnitPrice} senza prezzo
                               </span>
                             )}
                           </span>

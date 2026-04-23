@@ -258,7 +258,7 @@ export const SUPPLY_ONLY_PLAN = {
 };
 
 export const GLOBAL_PAYMENT_NOTES: string[] = [
+    'MODALITÀ DI PAGAMENTO\nBonifico Rimessa diretta\nBANCA DI CREDITO COOPERATIVO DI BARLASSINA-\nSOCIETA COOPERATIVA - B.C.C. DI BARL\nIBAN IT29L0837433240000006605276',
     'Il cliente non potra ritrattare o ritardare i pagamenti dopo la sottoscrizione del contratto.',
-    'In caso di mancato saldo del 60% all avviso di pronta merce, la consegna non verra effettuata, la merce restera in giacenza presso il nostro magazzino e saranno addebitate le relative spese.',
     'Eventuali contestazioni saranno prese in considerazione solo dopo l integrale pagamento e previo sopralluogo congiunto.'
 ];

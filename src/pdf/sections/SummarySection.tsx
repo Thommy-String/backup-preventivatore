@@ -74,7 +74,17 @@ export function SummarySection({
                       </Text>
                     ))}
                   </Text>
-                  <Text style={[s.td, s.right]}>{euro(r.amount)}</Text>
+                  <Text style={[s.td, s.right]}>
+                    {typeof (r as any).amount_discounted === 'number' && (r as any).amount_discounted < r.amount ? (
+                      <>
+                        <Text style={{ color: '#dc2626', textDecoration: 'line-through' }}>{euro(r.amount)}</Text>
+                        {'  '}
+                        <Text style={{ fontWeight: 700 }}>{euro((r as any).amount_discounted)}</Text>
+                      </>
+                    ) : (
+                      euro(r.amount)
+                    )}
+                  </Text>
                 </View>
               )
             })
@@ -115,16 +125,29 @@ export function SummarySection({
             </>
           ) : (
             <View style={[s.tr, { borderBottomWidth: 0 }]}> 
-              <Text style={[s.td, { flex: 2, fontWeight: 700, backgroundColor: '#f7f7f7' }]}>TOTALE (IVA ESCLUSA)</Text>
-              <Text style={[s.td, s.right, { fontWeight: 700, backgroundColor: '#f7f7f7' }]}>{euro(originalTotal)}</Text>
+              <Text style={[s.td, { flex: 2, fontWeight: 700 }, ...(showIncl ? [] : [{ backgroundColor: '#f7f7f7' }])]}>TOTALE (IVA ESCLUSA)</Text>
+              <Text style={[s.td, s.right, { fontWeight: 700 }, ...(showIncl ? [] : [{ backgroundColor: '#f7f7f7' }])]}>{euro(originalTotal)}</Text>
             </View>
           )}
 
           {showIncl ? (
-            <View style={[s.tr, { borderTopWidth: 0 }]}> 
-              <Text style={[s.td, { flex: 2, fontWeight: 700 }, highlightBg]}>TOTALE (IVA INCLUSA)</Text>
-              <Text style={[s.td, s.right, { fontWeight: 700 }, highlightBg]}>{euro(totalIncl)}</Text>
-            </View>
+            <>
+              <View style={[s.tr]}> 
+                <Text style={[s.td, { flex: 2, color: '#6b7280' }]}>
+                  IVA <Text style={{ color: '#9ca3af' }}>({vatPct}%)</Text>
+                </Text>
+                <Text style={[s.td, s.right, { color: '#374151' }]}>{euro(displayedFinal * (vatPct / 100))}</Text>
+              </View>
+              <View style={[s.tr, { borderTopWidth: 0 }]}> 
+                <View style={[s.td, { flex: 2, backgroundColor: '#f7f7f7', flexDirection: 'column' }]}> 
+                  <Text style={{ fontWeight: 700 }}>TOTALE (IVA INCLUSA)</Text>
+                  <Text style={{ fontSize: 8, color: '#6b7280', marginTop: 2 }}>
+                    di cui IVA {euro(displayedFinal * (vatPct / 100))} ({vatPct}%)
+                  </Text>
+                </View>
+                <Text style={[s.td, s.right, { fontWeight: 700, backgroundColor: '#f7f7f7' }]}>{euro(totalIncl)}</Text>
+              </View>
+            </>
           ) : null}
         </View>
       </View>
@@ -148,7 +171,11 @@ export function SummarySection({
             const detailParts: string[] = []
             if (typeof pieces === 'number' && pieces > 0) detailParts.push(`${pieces} pezzi`)
             if (surfaceRows.length > 0) {
-              detailParts.push(...surfaceRows.map((row) => `${formatMq(row.mq)}${row.missingDimensions > 0 ? ` (${row.missingDimensions} senza dimensioni)` : ''}`))
+              detailParts.push(...surfaceRows.map((row) => {
+                const parts = [formatMq(row.mq)]
+                if (row.missingDimensions > 0) parts.push(`(${row.missingDimensions} senza dimensioni)`)
+                return parts.join(' · ')
+              }))
             }
             return (
               <View key={k} style={s.tr}>
@@ -156,7 +183,17 @@ export function SummarySection({
                   <>
                     <Text style={[s.td, { flex: 1.5, fontWeight: 700 }]}>{label}</Text>
                     <Text style={[s.td, { flex: 2, color: '#4b5563' }]}>{detailParts.join(' · ') || '—'}</Text>
-                    <Text style={[s.td, s.right]}>{euro(r.amount)}</Text>
+                    <Text style={[s.td, s.right]}>
+                      {typeof (r as any).amount_discounted === 'number' && (r as any).amount_discounted < r.amount ? (
+                        <>
+                          <Text style={{ color: '#dc2626', textDecoration: 'line-through' }}>{euro(r.amount)}</Text>
+                          {'  '}
+                          <Text style={{ fontWeight: 700 }}>{euro((r as any).amount_discounted)}</Text>
+                        </>
+                      ) : (
+                        euro(r.amount)
+                      )}
+                    </Text>
                   </>
                 ) : (
                   <>
@@ -172,7 +209,17 @@ export function SummarySection({
                         </Text>
                       ))}
                     </Text>
-                    <Text style={[s.td, s.right]}>{euro(r.amount)}</Text>
+                    <Text style={[s.td, s.right]}>
+                      {typeof (r as any).amount_discounted === 'number' && (r as any).amount_discounted < r.amount ? (
+                        <>
+                          <Text style={{ color: '#dc2626', textDecoration: 'line-through' }}>{euro(r.amount)}</Text>
+                          {'  '}
+                          <Text style={{ fontWeight: 700 }}>{euro((r as any).amount_discounted)}</Text>
+                        </>
+                      ) : (
+                        euro(r.amount)
+                      )}
+                    </Text>
                   </>
                 )}
               </View>
@@ -222,12 +269,26 @@ export function SummarySection({
           const vatPct = typeof vatPercent === 'number' && Number.isFinite(vatPercent) ? vatPercent : 22
           const displayedFinal = hasDiscount ? discountedTotal : originalTotal
           if (!showIncl) return null
-          const totalIncl = displayedFinal * (1 + vatPct / 100)
+          const vatAmount = displayedFinal * (vatPct / 100)
+          const totalIncl = displayedFinal + vatAmount
           return (
-            <View style={[s.tr, { borderTopWidth: 0 }]}> 
-              <Text style={[s.td, { flex: 2, fontWeight: 700, backgroundColor: '#f7f7f7' }]}>TOTALE (IVA INCLUSA)</Text>
-              <Text style={[s.td, s.right, { fontWeight: 700, backgroundColor: '#f7f7f7' }]}>{euro(totalIncl)}</Text>
-            </View>
+            <>
+              <View style={[s.tr]}> 
+                <Text style={[s.td, { flex: 2, color: '#6b7280' }]}>
+                  IVA <Text style={{ color: '#9ca3af' }}>({vatPct}%)</Text>
+                </Text>
+                <Text style={[s.td, s.right, { color: '#374151' }]}>{euro(vatAmount)}</Text>
+              </View>
+              <View style={[s.tr, { borderTopWidth: 0 }]}> 
+                <View style={[s.td, { flex: 2, backgroundColor: '#f7f7f7', flexDirection: 'column' }]}> 
+                  <Text style={{ fontWeight: 700 }}>TOTALE (IVA INCLUSA)</Text>
+                  <Text style={{ fontSize: 8, color: '#6b7280', marginTop: 2 }}>
+                    di cui IVA {euro(vatAmount)} ({vatPct}%)
+                  </Text>
+                </View>
+                <Text style={[s.td, s.right, { fontWeight: 700, backgroundColor: '#f7f7f7' }]}>{euro(totalIncl)}</Text>
+              </View>
+            </>
           )
         })()}
       </View>

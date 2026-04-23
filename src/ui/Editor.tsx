@@ -86,9 +86,14 @@ const cleanManualRow = (row: any): ManualTotalRow => {
   const label = typeof row?.label === 'string' ? row.label : ''
   const amountVal = Number(row?.amount)
   const amount = Number.isFinite(amountVal) ? amountVal : 0
+  const amountDiscVal = Number(row?.amount_discounted)
+  const amount_discounted = Number.isFinite(amountDiscVal) && row?.amount_discounted !== null && row?.amount_discounted !== undefined
+    ? amountDiscVal
+    : null
   const pieces = typeof row?.pieces === 'number' && Number.isFinite(row.pieces) ? row.pieces : null
   const surfaces = normalizeSurfaceEntries(row?.surfaces)
   const base: ManualTotalRow = { id, label, amount, pieces }
+  if (amount_discounted !== null) base.amount_discounted = amount_discounted
   if (surfaces.length > 0) base.surfaces = surfaces
   return base
 }
@@ -151,18 +156,22 @@ export default function Editor() {
   // --- Mobile-friendly local strings for Riepilogo costi inputs ---
   const [piecesStr, setPiecesStr] = useState<Record<string, string>>({});
   const [amountStr, setAmountStr] = useState<Record<string, string>>({});
+  const [amountDiscStr, setAmountDiscStr] = useState<Record<string, string>>({});
 
   // Keep local strings in sync with manualTotals (and hide the initial 0 for amount)
   useEffect(() => {
     const nextPieces: Record<string, string> = {};
     const nextAmount: Record<string, string> = {};
+    const nextAmountDisc: Record<string, string> = {};
     manualTotals.forEach(r => {
       nextPieces[r.id] = (typeof r.pieces === 'number' && isFinite(r.pieces)) ? String(r.pieces) : '';
       // UI nicer: if amount is 0, show empty string so "0" isn't forced
       nextAmount[r.id] = (typeof r.amount === 'number' && isFinite(r.amount) && r.amount !== 0) ? String(r.amount) : '';
+      nextAmountDisc[r.id] = (typeof r.amount_discounted === 'number' && isFinite(r.amount_discounted)) ? String(r.amount_discounted) : '';
     });
     setPiecesStr(nextPieces);
     setAmountStr(nextAmount);
+    setAmountDiscStr(nextAmountDisc);
   }, [manualTotals]);
   // --- Handlers: commit on blur, allow empty while typing ---
   const onPiecesChange = (id: string, v: string) => {
@@ -198,6 +207,26 @@ export default function Editor() {
     // format back with up to 2 decimals only if user typed decimals; otherwise integer
     const hasSep = /[.,]/.test(raw);
     setAmountStr(prev => ({ ...prev, [id]: hasSep ? n.toFixed(2).replace('.', ',') : String(n) }));
+  };
+
+  const onAmountDiscChange = (id: string, v: string) => {
+    if (v === '') { setAmountDiscStr(prev => ({ ...prev, [id]: '' })); return; }
+    if (/^\d+([.,]\d{0,2})?$/.test(v)) {
+      setAmountDiscStr(prev => ({ ...prev, [id]: v }));
+    }
+  };
+  const onAmountDiscBlur = (id: string) => {
+    const raw = amountDiscStr[id] ?? '';
+    if (raw === '') {
+      updateRow(id, { amount_discounted: null });
+      setAmountDiscStr(prev => ({ ...prev, [id]: '' }));
+      return;
+    }
+    const parsed = Number(normalizeAmountInput(raw));
+    const n = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+    updateRow(id, { amount_discounted: n });
+    const hasSep = /[.,]/.test(raw);
+    setAmountDiscStr(prev => ({ ...prev, [id]: hasSep ? n.toFixed(2).replace('.', ',') : String(n) }));
   };
 
 
@@ -649,10 +678,11 @@ export default function Editor() {
       const catTotals = manualTotals.map(r => ({
         label: r.label || '-',
         amount: Number.isFinite(Number(r.amount)) ? Number(r.amount) : 0,
+        amount_discounted: (typeof r.amount_discounted === 'number' && Number.isFinite(r.amount_discounted)) ? r.amount_discounted : null,
         pieces: (typeof r.pieces === 'number' && isFinite(r.pieces) && r.pieces > 0) ? r.pieces : null,
         surfaces: r.surfaces ? normalizeSurfaceEntries(r.surfaces) : undefined,
       }));
-      const totalExcluded = catTotals.reduce((s, r) => s + (r.amount || 0), 0);
+      const totalExcluded = catTotals.reduce((s, r) => s + ((r.amount_discounted ?? r.amount) || 0), 0);
 
       // ↓ SCONTO (solo UI)
       const hasDiscount =
@@ -870,7 +900,7 @@ export default function Editor() {
 
   function onDuplicateQuote() { toast.info('Duplica preventivo in arrivo') }
 
-  const totalExcluded = manualTotals.reduce((sum, r) => sum + (Number(r.amount) || 0), 0)
+  const totalExcluded = manualTotals.reduce((sum, r) => sum + (Number(r.amount_discounted ?? r.amount) || 0), 0)
 
   const notesMap = useMemo(() => parseNotesMap(quote?.notes), [quote?.notes])
   const internalNote = notesMap['NOTE_INTERNE'] ?? ''
@@ -954,6 +984,7 @@ export default function Editor() {
           dragTotalId={dragTotalId}
           piecesStr={piecesStr}
           amountStr={amountStr}
+          amountDiscStr={amountDiscStr}
           totalExcluded={totalExcluded}
           hasDiscount={hasDiscount}
           discountedTotal={discountedTotal}
@@ -972,6 +1003,8 @@ export default function Editor() {
           onPiecesBlur={onPiecesBlur}
           onAmountChange={onAmountChange}
           onAmountBlur={onAmountBlur}
+          onAmountDiscChange={onAmountDiscChange}
+          onAmountDiscBlur={onAmountDiscBlur}
           onOpenSurfaceModal={setSurfaceRowId}
           onToggleDiscountEditor={() => {
             setShowDiscountEditor((v) => !v)

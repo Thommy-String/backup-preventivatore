@@ -10,6 +10,7 @@ export type CategoryTotalInput = {
   category?: string | null
   label?: string | null
   amount?: number | null
+  amount_discounted?: number | null
   pieces?: number | null
   surfaces?: ManualTotalSurfaceEntry[] | null
 }
@@ -47,6 +48,10 @@ export function normalizeTotals(input?: CategoryTotalInput[] | null) {
   return arr.map((r) => ({
     category: safeText(r?.label ?? r?.category ?? '', '-'),
     amount: typeof r?.amount === 'number' && Number.isFinite(r.amount) ? r.amount : 0,
+    amount_discounted:
+      typeof (r as any)?.amount_discounted === 'number' && Number.isFinite((r as any).amount_discounted)
+        ? (r as any).amount_discounted
+        : null,
     pieces:
       typeof (r as any)?.pieces === 'number' && Number.isFinite((r as any).pieces) && (r as any).pieces > 0
         ? (r as any).pieces

@@ -81,7 +81,7 @@ export default function QuotePDF(props: QuotePDFProps) {
 
     const totals = normalizeTotals(catTotals)
     const mnt = typeof mountingCost === 'number' && Number.isFinite(mountingCost) ? mountingCost : 0
-    const fallbackTotal = totals.reduce((s, r) => s + r.amount, 0) + mnt
+    const fallbackTotal = totals.reduce((s, r) => s + ((r as any).amount_discounted ?? r.amount), 0) + mnt
 
     const hasDiscount =
         !!(props?.discount &&

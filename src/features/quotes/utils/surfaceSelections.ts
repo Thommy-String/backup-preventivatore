@@ -120,6 +120,14 @@ export type SurfaceSummaryRow = {
   mq: number
   selectedCount: number
   missingDimensions: number
+  /** Somma dei prezzi unitari (unit_price * qty) delle voci collegate */
+  priceTotal: number
+  /** Somma dei prezzi scontati effettivi (unit_price_discounted se presente, altrimenti unit_price) * qty */
+  priceTotalDiscounted: number
+  /** Indica se almeno una voce ha un prezzo scontato attivo */
+  hasDiscount: boolean
+  /** Numero di voci selezionate prive di prezzo unitario */
+  missingUnitPrice: number
 }
 
 export const buildSurfaceSummary = (
@@ -133,12 +141,34 @@ export const buildSurfaceSummary = (
     const selectedItems = itemsForEntry(entry, items)
     let mq = 0
     let missing = 0
+    let priceTotal = 0
+    let priceTotalDiscounted = 0
+    let hasDiscount = false
+    let missingUnitPrice = 0
     selectedItems.forEach((item) => {
       const area = computeItemSurfaceMq(item)
       if (area > 0) {
         mq += area
       } else {
         missing += 1
+      }
+      const unit = pickNumber((item as any).unit_price)
+      const unitDisc = pickNumber((item as any).unit_price_discounted)
+      const qty = pickNumber((item as any).qty) ?? 1
+      const q = qty > 0 ? qty : 1
+      const baseUnit = unit != null && unit > 0 ? unit : null
+      const discUnit = unitDisc != null && unitDisc > 0 && (baseUnit == null || unitDisc < baseUnit) ? unitDisc : null
+      if (baseUnit != null) {
+        priceTotal += baseUnit * q
+      }
+      if (discUnit != null) {
+        priceTotalDiscounted += discUnit * q
+        hasDiscount = true
+      } else if (baseUnit != null) {
+        priceTotalDiscounted += baseUnit * q
+      }
+      if (baseUnit == null && discUnit == null) {
+        missingUnitPrice += 1
       }
     })
     return {
@@ -147,6 +177,10 @@ export const buildSurfaceSummary = (
       mq: round2(mq),
       selectedCount: selectedItems.length,
       missingDimensions: missing,
+      priceTotal: round2(priceTotal),
+      priceTotalDiscounted: round2(priceTotalDiscounted),
+      hasDiscount,
+      missingUnitPrice,
     }
   })
 }

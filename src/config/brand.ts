@@ -36,15 +36,15 @@ const XINFISSI_PROFILE: BrandProfile = {
 
 const ECOSOLUTION_PROFILE: BrandProfile = {
   id: 'ecosolution',
-  label: 'Ecosolution',
+  label: 'MRK-EcoSolution',
   defaultTermsProfileId: 'privato',
   logoAsset: ecoSolutionsLogo,
   companyDetails: [
-    'Ecosolution',
-    '04640600161',
-    'Via Roma 8 - Lentate sul Seveso 20823 (MB)',
-    'Indirizzo',
-    'info@ecosolutionsas.it · www.ecosolutionsas.it · +39 377 576 3662',
+    'MRK-EcoSolution',
+    'C.F. e P.IVA 04640600161',
+    'VIA PRIMO MAGGIO 3',
+    '23892 BULCIAGO LC',
+    'info@ecosolutionsas.it · www.ecosolutionsas.it · +334 222 1212',
   ],
   pdfTheme: {
     accent: '#3fb26b',
