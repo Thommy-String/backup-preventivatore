@@ -361,6 +361,36 @@ export function ItemModal({ draft, editingId, onChange, onCancel, onSave }: Prop
         } as QuoteItem;
       }
 
+      // Se l'utente ha caricato manualmente una foto, convertiamola in data URL
+      // (la blob: URL non è leggibile da react-pdf né persistibile su DB)
+      if (manualOverride) {
+        const pickedFile: File | undefined = (finalDraft as any)?.__pickedFile;
+        const currentImage = (finalDraft as any)?.image_url;
+        const needsConversion = pickedFile || (typeof currentImage === 'string' && currentImage.startsWith('blob:'));
+        if (needsConversion) {
+          try {
+            let dataUrl: string | null = null;
+            if (pickedFile) {
+              dataUrl = await blobToDataUrl(pickedFile);
+            } else if (typeof currentImage === 'string' && currentImage.startsWith('blob:')) {
+              const resp = await fetch(currentImage);
+              const blobFromUrl = await resp.blob();
+              dataUrl = await blobToDataUrl(blobFromUrl);
+            }
+            if (dataUrl) {
+              finalDraft = {
+                ...(finalDraft as any),
+                __previewUrl: dataUrl,
+                image_url: dataUrl,
+                __needsUpload: true,
+              } as QuoteItem;
+            }
+          } catch (e) {
+            console.warn('Conversione immagine caricata in data URL fallita', e);
+          }
+        }
+      }
+
     } catch (e) {
       console.warn("Generazione PNG al salvataggio fallita", e);
     }

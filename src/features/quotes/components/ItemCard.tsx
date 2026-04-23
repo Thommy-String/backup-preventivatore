@@ -41,6 +41,11 @@ export function ItemCard({ item: it, onEdit, onDuplicate, onRemove }: Props) {
                     {/* Thumbnail più grande */}
                     <div className="relative w-24 h-24 sm:w-32 sm:h-32 shrink-0 rounded-lg border border-gray-200 bg-gradient-to-br from-gray-50 to-white flex items-center justify-center shadow-sm overflow-hidden">
                         {(() => {
+                            const manualOverride = Boolean((it as any)?.options?.manual_image_override)
+                            if (manualOverride && thumbSrc) {
+                                return <img src={thumbSrc} alt={label} loading="lazy" className="max-w-full max-h-full object-contain rounded" />
+                            }
+
                             if (it.kind === 'finestra' && (it as any)?.options?.gridWindow) {
                                 return (
                                     <WindowSvg

@@ -459,27 +459,47 @@ export default function Editor() {
     const hasManualOverride = Boolean((toSave as any)?.options?.manual_image_override)
     if (pickedFile) {
       try {
+        // 1) Sempre dataURL: garantisce rendering nel PDF (react-pdf) anche
+        //    senza CORS configurato sul bucket Storage.
+        const dataUrl = await blobToDataURL(pickedFile)
+        toSave.image_url = dataUrl
+        // @ts-ignore
+        toSave.__previewUrl = dataUrl
+
+        // 2) Upload best-effort su Supabase Storage (non blocca il PDF).
+        //    Lo facciamo "fire-and-forget" senza salvare l'URL pubblico nell'item:
+        //    il dataURL nell'image_url è già autosufficiente per PDF e visualizzazione.
         if (quote?.id) {
-          const publicUrl = await uploadQuoteItemImage(pickedFile, String(quote.id))
-          toSave.image_url = publicUrl
-          // @ts-ignore
-          toSave.__previewUrl = publicUrl
-        } else {
-          const dataUrl = await blobToDataURL(pickedFile)
-          toSave.image_url = dataUrl
-          // @ts-ignore
-          toSave.__previewUrl = dataUrl
+          uploadQuoteItemImage(pickedFile, String(quote.id)).catch((uploadErr) => {
+            console.warn('Upload Storage non riuscito (continuo con dataURL)', uploadErr)
+          })
         }
+
         // @ts-ignore
         delete toSave.__needsUpload
       } catch (err: any) {
-        console.warn('Upload immagine manuale fallito', err)
-        toast.error('Upload foto fallito: verifica bucket e policy Storage')
+        console.warn('Conversione immagine manuale in dataURL fallita', err)
+        toast.error('Impossibile leggere la foto selezionata')
       } finally {
         // @ts-ignore
         delete toSave.__pickedFile
       }
     } else {
+      // Se non c'è file caricato ma image_url è una blob: URL (sessione vecchia),
+      // proviamo a riconvertirla in dataURL prima di salvare.
+      const cur = (toSave as any).image_url
+      if (typeof cur === 'string' && cur.startsWith('blob:')) {
+        try {
+          const resp = await fetch(cur)
+          const blob = await resp.blob()
+          const dataUrl = await blobToDataURL(blob)
+          toSave.image_url = dataUrl
+          // @ts-ignore
+          toSave.__previewUrl = dataUrl
+        } catch (e) {
+          console.warn('Reconversione blob: → dataURL fallita', e)
+        }
+      }
       // in ogni caso non persistiamo il File
       // @ts-ignore
       delete toSave.__pickedFile
@@ -857,8 +877,13 @@ export default function Editor() {
       if (typeof rest.image_url === 'string') {
         const raw = rest.image_url.trim()
         const isHttp = /^https?:\/\//i.test(raw)
-        rest.image_url = isHttp ? raw : undefined
+        const isData = /^data:image\//i.test(raw)
+        // Manteniamo URL pubblici (http/https) e dataURL (immagini caricate dall'utente o
+        // anteprime SVG rasterizzate). Scartiamo `blob:` o stringhe non valide.
+        rest.image_url = (isHttp || isData) ? raw : undefined
       }
+      // image_url_remote è un campo accessorio, non lo persistiamo nel JSON degli items
+      if ('image_url_remote' in rest) delete rest.image_url_remote
       return rest
     })
     debouncedSave({ items_json: payload } as any)

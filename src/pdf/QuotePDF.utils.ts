@@ -173,7 +173,8 @@ export function detailPairs(it: any): Array<[string, string]> {
   }
 
   const color = pickFirst(it, ['color', 'colore', 'profile_color', 'profilo_colore'])
-  if (color) pairs.push(['Colore', String(color)])
+  // Per porta_interna `color` è solo il fill SVG di anteprima (default #fff), non un dato da mostrare in PDF
+  if (color && kindLower !== 'porta_interna') pairs.push(['Colore', String(color)])
 
   // Specifiche per porta interna
   if (kindLower === 'porta_interna') {
@@ -258,6 +259,10 @@ export function detailPairs(it: any): Array<[string, string]> {
     'riferimento',
     'image_url',
     'imageUrl',
+    'image_url_remote',
+    'imageUrlRemote',
+    'unit_price_discounted',
+    'unitPriceDiscounted',
     'serratura', // explicitly handled above
     'spioncino', // explicitly handled above
     'handle_position',
@@ -274,6 +279,9 @@ export function detailPairs(it: any): Array<[string, string]> {
   if (kindLow === 'porta_interna') {
     skip.add('apertura')
     skip.add('sliding_direction')
+    // `color` su porta_interna è il fill SVG (default #fff), non un dato cliente
+    skip.add('color')
+    skip.add('colore')
   }
   for (const [k, v] of Object.entries(it)) {
     if (v === undefined || v === null || String(v).trim() === '') continue
