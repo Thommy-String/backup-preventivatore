@@ -131,33 +131,45 @@ export function QuoteHeaderSection({
         </View>
 
         <View style={s.colThird}>
-          <View style={s.clientCard}>
-            <Text style={s.h2Tight}>Spettabile</Text>
-            <Text>{safeText(customer?.name)}</Text>
-            {safeText(customer?.address, '') !== '' ? <Text>{safeText(customer?.address)}</Text> : null}
+          <View style={[s.clientCard, { borderColor: '#e5e7eb', borderRadius: 10, padding: 12, backgroundColor: '#fff' }]}>
+            <Text style={{ fontSize: 7.5, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1.4, marginBottom: 5 }}>Spettabile</Text>
+            <Text style={{ fontSize: 13, fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>{safeText(customer?.name)}</Text>
+            {safeText(customer?.address, '') !== '' ? (
+              <Text style={{ fontSize: 9.5, color: '#6b7280', marginTop: 4 }}>{safeText(customer?.address)}</Text>
+            ) : null}
             {(() => {
-              const parts = [
-                safeText(customer?.email, ''),
-                safeText(customer?.phone, ''),
-                customer?.vat && customer.vat.trim() ? `P.IVA ${customer.vat.trim()}` : '',
-              ].filter((p) => p && p.trim() !== '')
-              return parts.length > 0 ? <Text style={s.small}>{parts.join(' · ')}</Text> : null
+              const email = safeText(customer?.email, '')
+              const phone = safeText(customer?.phone, '')
+              const vat = customer?.vat && customer.vat.trim() ? `P.IVA ${customer.vat.trim()}` : ''
+              const parts = [email, phone, vat].filter(p => p.trim() !== '')
+              if (parts.length === 0) return null
+              return (
+                <View style={{ marginTop: 6, borderTopWidth: 1, borderTopColor: '#f3f4f6', borderStyle: 'solid', paddingTop: 5 }}>
+                  {email ? <Text style={{ fontSize: 9, color: '#374151' }}>{email}</Text> : null}
+                  {phone ? <Text style={{ fontSize: 9, color: '#374151', marginTop: 1 }}>{phone}</Text> : null}
+                  {vat ? <Text style={{ fontSize: 8.5, color: '#9ca3af', marginTop: 2 }}>{vat}</Text> : null}
+                </View>
+              )
             })()}
           </View>
         </View>
 
         <View style={s.colThird}>
-          <View style={[s.stampCard, { borderColor: accent, backgroundColor: soft }] }>
-            <Text style={s.stampTitle}>Offerta n° {safeText(quoteNumber, '-')}</Text>
-            <Text style={s.metaRow}>
-              <Text style={s.metaLabel}>Emesso:</Text> {formatISODate(issueDate)}
-            </Text>
-            <Text style={s.metaRow}>
-              <Text style={s.metaLabel}>Validità:</Text> {safeText(validityLabel)}
-            </Text>
-            <Text style={s.metaRow}>
-              <Text style={s.metaLabel}>Termini completamento:</Text> {safeText(installTime)}
-            </Text>
+          <View style={[s.stampCard, { borderColor: accent, borderStyle: 'solid', backgroundColor: soft, borderRadius: 10, padding: 12 }]}>
+            <Text style={{ fontSize: 7.5, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1.4, marginBottom: 5 }}>Offerta</Text>
+            <Text style={{ fontSize: 15, fontWeight: 700, color: '#111827', marginBottom: 8 }}>{safeText(quoteNumber, '-')}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+              <Text style={{ fontSize: 8, color: '#9ca3af' }}>Emesso</Text>
+              <Text style={{ fontSize: 8.5, color: '#374151', fontWeight: 600 }}>{formatISODate(issueDate)}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+              <Text style={{ fontSize: 8, color: '#9ca3af' }}>Validità</Text>
+              <Text style={{ fontSize: 8.5, color: '#374151', fontWeight: 600 }}>{safeText(validityLabel)}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 8, color: '#9ca3af' }}>Completamento</Text>
+              <Text style={{ fontSize: 8.5, color: '#374151', fontWeight: 600 }}>{safeText(installTime)}</Text>
+            </View>
           </View>
         </View>
       </View>

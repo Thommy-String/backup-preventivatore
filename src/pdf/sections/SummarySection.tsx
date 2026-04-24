@@ -131,23 +131,15 @@ export function SummarySection({
           )}
 
           {showIncl ? (
-            <>
-              <View style={[s.tr]}> 
-                <Text style={[s.td, { flex: 2, color: '#6b7280' }]}>
-                  IVA <Text style={{ color: '#9ca3af' }}>({vatPct}%)</Text>
-                </Text>
-                <Text style={[s.td, s.right, { color: '#374151' }]}>{euro(displayedFinal * (vatPct / 100))}</Text>
+            <View style={[s.tr, { borderTopWidth: 0 }]}>
+              <Text style={[s.td, { flex: 2, fontWeight: 700, backgroundColor: '#f7f7f7' }]}>
+                TOTALE (IVA INCLUSA {vatPct}%)
+              </Text>
+              <View style={[s.td, s.right, { backgroundColor: '#f7f7f7', alignItems: 'flex-end' }]}>
+                <Text style={{ fontWeight: 700 }}>{euro(totalIncl)}</Text>
+                <Text style={{ fontSize: 8, color: '#6b7280', marginTop: 2 }}>di cui IVA {euro(displayedFinal * (vatPct / 100))}</Text>
               </View>
-              <View style={[s.tr, { borderTopWidth: 0 }]}> 
-                <View style={[s.td, { flex: 2, backgroundColor: '#f7f7f7', flexDirection: 'column' }]}> 
-                  <Text style={{ fontWeight: 700 }}>TOTALE (IVA INCLUSA)</Text>
-                  <Text style={{ fontSize: 8, color: '#6b7280', marginTop: 2 }}>
-                    di cui IVA {euro(displayedFinal * (vatPct / 100))} ({vatPct}%)
-                  </Text>
-                </View>
-                <Text style={[s.td, s.right, { fontWeight: 700, backgroundColor: '#f7f7f7' }]}>{euro(totalIncl)}</Text>
-              </View>
-            </>
+            </View>
           ) : null}
         </View>
       </View>
@@ -272,23 +264,15 @@ export function SummarySection({
           const vatAmount = displayedFinal * (vatPct / 100)
           const totalIncl = displayedFinal + vatAmount
           return (
-            <>
-              <View style={[s.tr]}> 
-                <Text style={[s.td, { flex: 2, color: '#6b7280' }]}>
-                  IVA <Text style={{ color: '#9ca3af' }}>({vatPct}%)</Text>
-                </Text>
-                <Text style={[s.td, s.right, { color: '#374151' }]}>{euro(vatAmount)}</Text>
+            <View style={[s.tr, { borderTopWidth: 0 }]}>
+              <Text style={[s.td, { flex: 2, fontWeight: 700, backgroundColor: '#f7f7f7' }]}>
+                TOTALE (IVA INCLUSA {vatPct}%)
+              </Text>
+              <View style={[s.td, s.right, { backgroundColor: '#f7f7f7', alignItems: 'flex-end' }]}>
+                <Text style={{ fontWeight: 700 }}>{euro(totalIncl)}</Text>
+                <Text style={{ fontSize: 8, color: '#6b7280', marginTop: 2 }}>di cui IVA {euro(vatAmount)}</Text>
               </View>
-              <View style={[s.tr, { borderTopWidth: 0 }]}> 
-                <View style={[s.td, { flex: 2, backgroundColor: '#f7f7f7', flexDirection: 'column' }]}> 
-                  <Text style={{ fontWeight: 700 }}>TOTALE (IVA INCLUSA)</Text>
-                  <Text style={{ fontSize: 8, color: '#6b7280', marginTop: 2 }}>
-                    di cui IVA {euro(vatAmount)} ({vatPct}%)
-                  </Text>
-                </View>
-                <Text style={[s.td, s.right, { fontWeight: 700, backgroundColor: '#f7f7f7' }]}>{euro(totalIncl)}</Text>
-              </View>
-            </>
+            </View>
           )
         })()}
       </View>
