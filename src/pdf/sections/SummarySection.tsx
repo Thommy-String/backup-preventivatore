@@ -30,9 +30,7 @@ export function SummarySection({
   discount,
   showTotalIncl,
   vatPercent,
-  theme,
 }: SummarySectionProps) {
-  const discountedBg = theme?.soft || '#e8f7ec'
   const isEco = brandId === 'ecosolution'
   const normalizePersianaNoFrameLabel = (value: string) => {
     const clean = value.trim().replace(/[.:;,_-]+$/g, '')
@@ -44,7 +42,6 @@ export function SummarySection({
     const vatPct = typeof vatPercent === 'number' && Number.isFinite(vatPercent) ? vatPercent : 22
     const displayedFinal = hasDiscount ? discountedTotal : originalTotal
     const totalIncl = displayedFinal * (1 + vatPct / 100)
-    const highlightBg = { backgroundColor: '#f7f7f7' }
 
     return (
       <View style={s.block}>
@@ -102,45 +99,49 @@ export function SummarySection({
             </View>
           )}
 
-          {hasDiscount ? (
-            <>
-              <View style={[s.tr]}>
-                <Text style={[s.td, { flex: 2, fontWeight: 700 }, ...(showIncl ? [] : [highlightBg]) ]}>TOTALE (IVA ESCLUSA)</Text>
-                <Text style={[s.td, s.right, { fontWeight: 700 }, ...(showIncl ? [] : [highlightBg]) ]}>{euro(originalTotal)}</Text>
-              </View>
+        </View>
 
-              <View style={[s.tr, { borderBottomWidth: 0, backgroundColor: discountedBg }]}> 
-                <Text style={[s.td, { flex: 2, fontWeight: 700 }]}> 
-                  {(
-                    discount?.mode === 'pct' &&
-                    typeof discount?.pct === 'number' &&
-                    discount.pct > 0
-                  )
-                    ? `TOTALE SCONTATO DEL ${discount.pct}% (IVA ESCLUSA)`
-                    : 'TOTALE SCONTATO (IVA ESCLUSA)'
-                  }
+        {/* ── Totals footer ── */}
+        <View style={{ marginTop: 2, borderTopWidth: 1, borderTopColor: '#e5e7eb', borderStyle: 'solid', paddingTop: 8 }}>
+          {/* Subtotale */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8, marginBottom: hasDiscount ? 4 : 0 }}>
+            <Text style={{ fontSize: 9, color: '#9ca3af' }}>Subtotale (IVA esclusa)</Text>
+            <Text style={{ fontSize: 9, color: '#9ca3af' }}>{euro(originalTotal)}</Text>
+          </View>
+
+          {/* Sconto */}
+          {hasDiscount && (
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8, marginBottom: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <Text style={{ fontSize: 9, color: '#16a34a' }}>
+                  {discount?.mode === 'pct' && typeof discount?.pct === 'number' && discount.pct > 0
+                    ? `Sconto ${discount.pct}%`
+                    : 'Sconto applicato'}
                 </Text>
-                <Text style={[s.td, s.right, { fontWeight: 700 }]}>{euro(discountedTotal)}</Text>
               </View>
-            </>
-          ) : (
-            <View style={[s.tr, { borderBottomWidth: 0 }]}> 
-              <Text style={[s.td, { flex: 2, fontWeight: 700 }, ...(showIncl ? [] : [{ backgroundColor: '#f7f7f7' }])]}>TOTALE (IVA ESCLUSA)</Text>
-              <Text style={[s.td, s.right, { fontWeight: 700 }, ...(showIncl ? [] : [{ backgroundColor: '#f7f7f7' }])]}>{euro(originalTotal)}</Text>
+              <Text style={{ fontSize: 9, color: '#16a34a' }}>- {euro(originalTotal - discountedTotal)}</Text>
             </View>
           )}
 
-          {showIncl ? (
-            <View style={[s.tr, { borderTopWidth: 0 }]}>
-              <Text style={[s.td, { flex: 2, fontWeight: 700, backgroundColor: '#f7f7f7' }]}>
-                TOTALE (IVA INCLUSA {vatPct}%)
+          {/* Divider */}
+          <View style={{ height: 1, backgroundColor: '#111827', marginHorizontal: 8, marginBottom: 8 }} />
+
+          {/* Totale finale */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingHorizontal: 8 }}>
+            <View>
+              <Text style={{ fontSize: 11, fontWeight: 700, color: '#111827' }}>
+                {showIncl ? 'Totale IVA inclusa' : 'Totale'}
               </Text>
-              <View style={[s.td, s.right, { backgroundColor: '#f7f7f7', alignItems: 'flex-end' }]}>
-                <Text style={{ fontWeight: 700 }}>{euro(totalIncl)}</Text>
-                <Text style={{ fontSize: 8, color: '#6b7280', marginTop: 2 }}>di cui IVA {euro(displayedFinal * (vatPct / 100))}</Text>
-              </View>
+              {showIncl && (
+                <Text style={{ fontSize: 8, color: '#9ca3af', marginTop: 2 }}>
+                  IVA {vatPct}% · di cui {euro(displayedFinal * (vatPct / 100))}
+                </Text>
+              )}
             </View>
-          ) : null}
+            <Text style={{ fontSize: 17, fontWeight: 700, color: '#111827' }}>
+              {showIncl ? euro(totalIncl) : euro(displayedFinal)}
+            </Text>
+          </View>
         </View>
       </View>
     )
@@ -229,53 +230,57 @@ export function SummarySection({
             <Text style={[s.td, s.right]}>{euro(mountingCost)}</Text>
           </View>
         )}
-        {hasDiscount ? (
-          <>
-            <View style={[s.tr]}>
-              <Text style={[s.td, { flex: 2, fontWeight: 700 }, ...((showTotalIncl ? [] : [{ backgroundColor: '#f7f7f7' }]) as any[])]}>TOTALE (IVA ESCLUSA)</Text>
-              <Text style={[s.td, s.right, { fontWeight: 700 }, ...((showTotalIncl ? [] : [{ backgroundColor: '#f7f7f7' }]) as any[])]}>{euro(originalTotal)}</Text>
-            </View>
+      </View>
 
-            <View style={[s.tr, { borderBottomWidth: 0, backgroundColor: '#e8f7ec' }]}> 
-              <Text style={[s.td, { flex: 2, fontWeight: 700 }]}> 
-                {(
-                  discount?.mode === 'pct' &&
-                  typeof discount?.pct === 'number' &&
-                  discount.pct > 0
-                )
-                  ? `TOTALE SCONTATO DEL ${discount.pct}% (IVA ESCLUSA)`
-                  : 'TOTALE SCONTATO (IVA ESCLUSA)'
-                }
-              </Text>
-              <Text style={[s.td, s.right, { fontWeight: 700 }]}>{euro(discountedTotal)}</Text>
-            </View>
-          </>
-        ) : (
-          <View style={[s.tr, { borderBottomWidth: 0 }]}> 
-            <Text style={[s.td, { flex: 2, fontWeight: 700 }, ...((showTotalIncl ? [] : [{ backgroundColor: '#f7f7f7' }]) as any[])]}>TOTALE (IVA ESCLUSA)</Text>
-            <Text style={[s.td, s.right, { fontWeight: 700 }, ...((showTotalIncl ? [] : [{ backgroundColor: '#f7f7f7' }]) as any[])]}>{euro(originalTotal)}</Text>
-          </View>
-        )}
-        {(() => {
+      {/* ── Totals footer ── */}
+      {(() => {
           const showIncl = !!showTotalIncl
           const vatPct = typeof vatPercent === 'number' && Number.isFinite(vatPercent) ? vatPercent : 22
           const displayedFinal = hasDiscount ? discountedTotal : originalTotal
-          if (!showIncl) return null
           const vatAmount = displayedFinal * (vatPct / 100)
           const totalIncl = displayedFinal + vatAmount
           return (
-            <View style={[s.tr, { borderTopWidth: 0 }]}>
-              <Text style={[s.td, { flex: 2, fontWeight: 700, backgroundColor: '#f7f7f7' }]}>
-                TOTALE (IVA INCLUSA {vatPct}%)
-              </Text>
-              <View style={[s.td, s.right, { backgroundColor: '#f7f7f7', alignItems: 'flex-end' }]}>
-                <Text style={{ fontWeight: 700 }}>{euro(totalIncl)}</Text>
-                <Text style={{ fontSize: 8, color: '#6b7280', marginTop: 2 }}>di cui IVA {euro(vatAmount)}</Text>
+            <View style={{ marginTop: 2, borderTopWidth: 1, borderTopColor: '#e5e7eb', borderStyle: 'solid', paddingTop: 8 }}>
+              {/* Subtotale */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8, marginBottom: hasDiscount ? 4 : 0 }}>
+                <Text style={{ fontSize: 9, color: '#9ca3af' }}>Subtotale (IVA esclusa)</Text>
+                <Text style={{ fontSize: 9, color: '#9ca3af' }}>{euro(originalTotal)}</Text>
+              </View>
+
+              {/* Sconto */}
+              {hasDiscount && (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8, marginBottom: 4 }}>
+                  <Text style={{ fontSize: 9, color: '#16a34a' }}>
+                    {discount?.mode === 'pct' && typeof discount?.pct === 'number' && discount.pct > 0
+                      ? `Sconto ${discount.pct}%`
+                      : 'Sconto applicato'}
+                  </Text>
+                  <Text style={{ fontSize: 9, color: '#16a34a' }}>- {euro(originalTotal - discountedTotal)}</Text>
+                </View>
+              )}
+
+              {/* Divider */}
+              <View style={{ height: 1, backgroundColor: '#111827', marginHorizontal: 8, marginBottom: 8 }} />
+
+              {/* Totale finale */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingHorizontal: 8 }}>
+                <View>
+                  <Text style={{ fontSize: 11, fontWeight: 700, color: '#111827' }}>
+                    {showIncl ? 'Totale IVA inclusa' : 'Totale'}
+                  </Text>
+                  {showIncl && (
+                    <Text style={{ fontSize: 8, color: '#9ca3af', marginTop: 2 }}>
+                      IVA {vatPct}% · di cui {euro(vatAmount)}
+                    </Text>
+                  )}
+                </View>
+                <Text style={{ fontSize: 17, fontWeight: 700, color: '#111827' }}>
+                  {showIncl ? euro(totalIncl) : euro(displayedFinal)}
+                </Text>
               </View>
             </View>
           )
         })()}
-      </View>
     </View>
   )
 }
