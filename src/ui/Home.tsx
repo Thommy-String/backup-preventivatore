@@ -492,6 +492,7 @@ export default function Home() {
         items_json: src.items_json ?? null,
         shipping_included: src.shipping_included ?? null,
         profile_system: src.profile_system ?? null,
+        profile_overview: (src as any).profile_overview ?? null,
         notes: src.notes ?? null,
         // Do not copy reference_key to avoid grouping with original
         reference: src.reference ?? null,
@@ -526,6 +527,7 @@ export default function Home() {
         items_json: payload.items_json,
         shipping_included: payload.shipping_included,
         profile_system: payload.profile_system,
+        profile_overview: payload.profile_overview,
         notes: payload.notes,
         reference: payload.reference ?? null,
         // ensure years if present
