@@ -56,7 +56,7 @@ export function ItemsDetailSection({ companyLogoUrl, brandId, theme, items }: It
               if (base === 'porta_blindata') base = 'Porta blindata'
               return base.charAt(0).toUpperCase() + base.slice(1)
             })()
-            const qty = `Q.tà ${Number.isFinite(Number(it?.qty)) ? String(it.qty) : '1'}`
+            const qtyNum = Number.isFinite(Number(it?.qty)) ? Number(it.qty) : 1; const qtyStr = `${qtyNum} unità`;
 
             const kindSlug = String(it?.kind || '').toLowerCase()
             const normalizedTitle = normalizePersianaNoFrameLabel(title)
@@ -161,7 +161,7 @@ export function ItemsDetailSection({ companyLogoUrl, brandId, theme, items }: It
                         return dims ? <Text style={[s.itemDims, isEco ? { color: '#4b5563' } : {}]}>· {dims}</Text> : null
                       })()}
                     </View>
-                    <Text style={s.itemQty}>{qty}</Text>
+                    <View style={{ backgroundColor: '#f3f4f6', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}><Text style={[s.itemQty, { color: '#4b5563', fontSize: 10, fontWeight: 600 }]}>{qtyStr}</Text></View>
                   </View>
                   {reference ? <Text style={s.itemRef}>{reference}</Text> : null}
                   {(() => {

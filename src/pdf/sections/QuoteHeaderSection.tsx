@@ -38,7 +38,7 @@ export function QuoteHeaderSection({
 
   const details = Array.isArray(companyDetails) && companyDetails.length > 0
     ? companyDetails
-    : [
+    : isEco ? [ 'ECO SOLUTION SAS', 'P.IVA 03524670138', 'Sede legale - Bulciago (LC) 23892', 'Via Primo Maggio, 3', 'info@ecosolutionsas.it · +39 349 321 0000' ] : [
       'X S.R.L.',
       'P.IVA 04062850120',
       'sede legale - Saronno (VA) 21047',
@@ -56,8 +56,8 @@ export function QuoteHeaderSection({
         <View style={{ marginBottom: 10 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <View style={{ flex: 1, paddingRight: 10 }}>
-              <Text style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase' }}>Ecosolutions</Text>
-              <Text style={{ fontSize: 10, color: '#111827', marginTop: 2 }}>{details[0] || 'Ecosolutions'}</Text>
+              <Text style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase' }}>Ecosolution</Text>
+              <Text style={{ fontSize: 10, color: '#111827', marginTop: 2 }}>{details[0] || 'Ecosolution'}</Text>
               {contactLineTop ? <Text style={{ fontSize: 8.6, color: '#6b7280', marginTop: 1 }}>{contactLineTop}</Text> : null}
               {contactLineBottom ? <Text style={{ fontSize: 8.6, color: '#6b7280' }}>{contactLineBottom}</Text> : null}
             </View>

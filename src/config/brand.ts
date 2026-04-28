@@ -22,12 +22,10 @@ const XINFISSI_PROFILE: BrandProfile = {
   defaultTermsProfileId: 'privato',
   logoAsset: xInfissiLogo,
   companyDetails: [
-    'X S.R.L.',
-    'P.IVA 04062850120',
-    'sede legale - Saronno (VA) 21047',
-    'Via San Giuseppe, 95',
-    'info@xinfissi.it · www.xinfissi.it · +39 345 457 3328',
-  ],
+    'Eco Solution Sas',
+    'P.IVA 04640600161',
+    'sede legale Via Primo Maggio 3',
+    'Via Roma, 8',  ],
   pdfTheme: {
     accent: '#3fb26b',
     soft: '#e8f7ec',

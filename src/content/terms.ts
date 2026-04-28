@@ -190,9 +190,9 @@ export const TERMS_PROFILES: TermsProfile[] = [
             title: 'Privacy e trattamento dei dati',
             body: [
                 'La sottoscrizione del presente documento costituisce informativa ai sensi del Regolamento (UE) 2016/679 e del D.Lgs. 196/2003 s.m.i.; i dati saranno trattati in modo lecito, corretto e trasparente.',
-                'X S.R.L., con sede legale in Via San Giuseppe 95 - 21047 Saronno (VA), tratta dati identificativi, fiscali e tecnici del cliente per finalita precontrattuali, contrattuali, amministrative e di assistenza post vendita su base giuridica contrattuale e di obbligo legale.',
+                'EcoSolution Sas, con sede legale in Via Primo Maggio 3 , 23892 BULCIAGO (LC), tratta dati identificativi, fiscali e tecnici del cliente per finalita precontrattuali, contrattuali, amministrative e di assistenza post vendita su base giuridica contrattuale e di obbligo legale.',
                 'I dati potranno essere comunicati a vettori, installatori, consulenti fiscali o enti pubblici nei limiti strettamente necessari all esecuzione del rapporto; non e previsto trasferimento extra UE salvo sistemi che garantiscano un adeguato livello di protezione.',
-                'Il cliente puo richiedere accesso, rettifica, limitazione, cancellazione o opposizione scrivendo a info@xinfissi.it; la conservazione avviene per il tempo necessario agli obblighi contrattuali e fiscali.'
+                'Il cliente puo richiedere accesso, rettifica, limitazione, cancellazione o opposizione scrivendo a info@ecosolutonsas.it; la conservazione avviene per il tempo necessario agli obblighi contrattuali e fiscali.'
             ]
         }
     },
@@ -239,9 +239,9 @@ export const TERMS_PROFILES: TermsProfile[] = [
             title: 'Privacy e trattamento dei dati',
             body: [
                 'La presente offerta integra l\'informativa privacy ai sensi del Regolamento (UE) 2016/679 e del D.Lgs. 196/2003 s.m.i.; il trattamento avviene nel rispetto dei principi di liceità, correttezza e trasparenza.',
-                'X S.R.L., Via San Giuseppe 95 - 21047 Saronno (VA), tratta dati societari e dei referenti aziendali per finalità contrattuali, amministrative, contabili e di tutela del credito, con basi giuridiche fondate sul contratto e sugli obblighi normativi.',
+                'Eco Solution Sas, con sede legale in Via Primo Maggio 3 , 23892 BULCIAGO (LC), tratta dati identificativi, fiscali, tratta dati societari e dei referenti aziendali per finalità contrattuali, amministrative, contabili e di tutela del credito, con basi giuridiche fondate sul contratto e sugli obblighi normativi.',
                 'I dati potranno essere comunicati a vettori, installatori, istituti di credito, consulenti o autorità competenti; eventuali trasferimenti extra UE avverranno solo verso soggetti che garantiscano misure adeguate.',
-                'Il cliente può esercitare i diritti previsti dagli artt. 15-22 GDPR (accesso, rettifica, limitazione, portabilità, opposizione e cancellazione) scrivendo a info@xinfissi.it; la conservazione dura il tempo necessario all\'esecuzione del contratto e degli obblighi di legge.'
+                'Il cliente può esercitare i diritti previsti dagli artt. 15-22 GDPR (accesso, rettifica, limitazione, portabilità, opposizione e cancellazione) scrivendo a info@ecosolutionsas.it; la conservazione dura il tempo necessario all\'esecuzione del contratto e degli obblighi di legge.'
             ]
         }
     }

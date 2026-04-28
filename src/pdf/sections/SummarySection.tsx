@@ -62,7 +62,7 @@ export function SummarySection({
                   <Text style={[s.td, { flex: 2 }]}> 
                     <Text>{label}</Text>
                     {typeof pieces === 'number' && pieces > 0 ? (
-                      <Text style={s.piecesNote}> · {pieces} pezzi </Text>
+                      <Text style={s.piecesNote}> · {pieces} unità </Text>
                     ) : null}
                     {surfaceRows.map((row) => (
                       <Text key={`${k}-${row.id}`} style={s.piecesNote}>
@@ -162,7 +162,7 @@ export function SummarySection({
             const pieces = (r as any).pieces as number | null
             const surfaceRows = buildSurfaceSummary((r as any).surfaces, items as any)
             const detailParts: string[] = []
-            if (typeof pieces === 'number' && pieces > 0) detailParts.push(`${pieces} pezzi`)
+            if (typeof pieces === 'number' && pieces > 0) detailParts.push(`${pieces} unità`)
             if (surfaceRows.length > 0) {
               detailParts.push(...surfaceRows.map((row) => {
                 const parts = [formatMq(row.mq)]
@@ -193,7 +193,7 @@ export function SummarySection({
                     <Text style={[s.td, { flex: 2 }]}> 
                       <Text>{label}</Text>
                       {typeof pieces === 'number' && pieces > 0 ? (
-                        <Text style={s.piecesNote}> · {pieces} pezzi </Text>
+                        <Text style={s.piecesNote}> · {pieces} unità </Text>
                       ) : null}
                       {surfaceRows.map((row) => (
                         <Text key={`${k}-${row.id}`} style={s.piecesNote}>
