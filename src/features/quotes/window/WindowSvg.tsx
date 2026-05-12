@@ -270,13 +270,21 @@ function WindowSvg({ cfg }: WindowSvgProps) {
     const outlineColor = (safe as any).outline_color ?? '#000';
 
     const drawing = rows.reduce((acc, row, rowIdx) => {
-        const rowH = (usableH * row.height_ratio) / totalRowRatios; // actual row height in mm
+        let rowH = 0;
+        let rowHeightLogicalMm = 0;
+        if (typeof row.max_height_mm === "number" && row.max_height_mm > 0) {
+            const pxPerMm = usableH / height_mm;
+            rowH = row.max_height_mm * pxPerMm;
+            rowHeightLogicalMm = row.max_height_mm;
+        } else {
+            rowH = (usableH * row.height_ratio) / totalRowRatios;
+            const logicalRatio = Number.isFinite(row.height_ratio) && row.height_ratio > 0 ? row.height_ratio : (1 / Math.max(1, rows.length));
+            rowHeightLogicalMm = logicalRatio * height_mm;
+        }
         const y0 = frame_mm + acc.offsetY;
-        const logicalRatio = Number.isFinite(row.height_ratio) && row.height_ratio > 0
-            ? row.height_ratio
-            : (1 / Math.max(1, rows.length));
+        
         const rowStartLogicalMm = acc.offsetLogicalMm;
-        const rowHeightLogicalMm = logicalRatio * height_mm;
+        
         const rowEndLogicalMm = rowStartLogicalMm + rowHeightLogicalMm;
         const rowHeightMm = rowH;
         acc.rowDimensions.push({ rowIdx, top: y0, bottom: y0 + rowH, heightMm: rowHeightMm });
@@ -321,10 +329,30 @@ function WindowSvg({ cfg }: WindowSvgProps) {
             const beadProfileW = 14;
 
             // 1. Sash Frame Extents
+            
+            let colH = rowH;
+            let sy = y0;
+            // Frame bounds recording
+            acc.leafRects = acc.leafRects || [];
+
+            if (typeof col.height_mm === 'number' && col.height_mm > 0) {
+                 const pxPerMm = usableH / height_mm;
+                 colH = col.height_mm * pxPerMm;
+                 // sy = y0; // Aligned to top by default
+            }
+            
             const sx = startX;
-            const sy = y0;
             const sw = colW;
-            const sh = rowH;
+            const sh = colH;
+            acc.leafRects.push({
+                x: sx - frame_mm,
+                y: sy - frame_mm,
+                rowIdx,
+                colIdx,
+                sx, sy, sw, sh
+            });
+
+
 
             // 2. Bead Extents
             const bx = sx + sashProfileW;
@@ -347,7 +375,7 @@ function WindowSvg({ cfg }: WindowSvgProps) {
                     <rect 
                         x={sx} y={sy} width={sw} height={sh} 
                         fill={frameColor} 
-                        stroke={TECH_STYLE.FRAME_STROKE} 
+                        stroke={outlineColor} 
                         strokeWidth={TECH_STYLE.STROKE_WIDTH_SASH} 
                     />
                     {woodEnabled && (
@@ -482,12 +510,15 @@ function WindowSvg({ cfg }: WindowSvgProps) {
                 const placement = handlePlacementForState(col.leaf?.state);
                 let handleSvg = null;
 
-                // Dimensioni più grandi e proporzionali alla finestra
+                // Dimensioni "realistiche": una maniglia reale è ~150 mm.
+                // Scala con radice quadrata della dimensione minore della finestra,
+                // così su finestre piccole resta visibile e su grandi non diventa enorme.
                 const minDim = Math.min(width_mm, height_mm);
-                const handleBodyWidth = Math.max(7, minDim * 0.0125);
-                const handleBodyHeight = Math.max(74, minDim * 0.108);
-                const handleLeverWidth = Math.max(14, minDim * 0.022);
-                const handleLeverHeight = Math.max(28, minDim * 0.048);
+                const handleScale = Math.min(1.6, Math.max(0.75, Math.sqrt(minDim / 1500)));
+                const handleBodyWidth = 13 * handleScale;
+                const handleBodyHeight = 150 * handleScale;
+                const handleLeverWidth = 26 * handleScale;
+                const handleLeverHeight = 50 * handleScale;
                 const handleRx = 0; // Square handle for technical drawing
                 const topBarY = -handleBodyHeight * 0.64;
                 const topBarCenterOffset = topBarY + handleLeverHeight / 2;
@@ -499,8 +530,8 @@ function WindowSvg({ cfg }: WindowSvgProps) {
                 const handleStroke = outlineColor;
                 const handleStrokeW = Math.max(0.5, strokeWidth * 0.6);
 
-                // Altezza maniglia configurabile (da terra)
-                const configHandleH = (safe as any).handle_height_mm;
+                // Altezza maniglia configurabile (da terra): prima per-anta, poi globale
+                const configHandleH = (col.handle_height_mm != null ? col.handle_height_mm : (safe as any).handle_height_mm);
 
                 if (placement === 'left' || placement === 'right') {
                     // Posizione verticale: la quota fa riferimento al rettangolo superiore (top bar),
@@ -628,7 +659,8 @@ function WindowSvg({ cfg }: WindowSvgProps) {
         seenSegments: new Set<string>(),
         rowBars: new Map<number, RowBarInfo>(),
         mullionLines: [] as Array<{ x: number; y1: number; y2: number; width: number }>,
-        horzLines: [] as Array<{ x1: number; x2: number; y: number; width: number }>
+        horzLines: [] as Array<{ x1: number; x2: number; y: number; width: number }>,
+        leafRects: [] as Array<{ x: number; y: number; rowIdx: number; colIdx: number; sx: number; sy: number; sw: number; sh: number }>
     });
 
     const rowHeightSegments = rows.length > 1
@@ -820,30 +852,77 @@ function WindowSvg({ cfg }: WindowSvgProps) {
                     <line x1="222" y1="0" x2="222" y2="320" stroke="rgba(255,255,255,0.018)" strokeWidth="0.38" />
                 </pattern>
             </defs>
-            {/* Telaio esterno: fill + stroke (Colorato) */}
-            <rect 
-                x={0} y={0} width={width_mm} height={height_mm} 
-                fill={frameColor} 
-                stroke={TECH_STYLE.FRAME_STROKE} 
-                strokeWidth={TECH_STYLE.STROKE_WIDTH_FRAME} 
-            />
+            {/* Telaio esterno e interno: dinamico */}
+            <g fill={frameColor}>
+                {drawing.leafRects.map((r, i) => {
+                    const isFirstCol = r.colIdx === 0;
+                    const isLastCol = r.colIdx === rows[r.rowIdx].cols.length - 1;
+                    const isFirstRow = r.rowIdx === 0;
+                    const isLastRow = r.rowIdx === rows.length - 1;
+                    const fLeft = isFirstCol ? frame_mm : frame_mm / 2;
+                    const fRight = isLastCol ? frame_mm : frame_mm / 2;
+                    const fTop = isFirstRow ? frame_mm : frame_mm / 2;
+                    const fBottom = isLastRow ? frame_mm : frame_mm / 2;
+                    return (
+                        <rect key={`outer-f-fill-${i}`} x={r.sx - fLeft} y={r.sy - fTop} width={r.sw + fLeft + fRight} height={r.sh + fTop + fBottom} />
+                    );
+                })}
+            </g>
             {woodEnabled && (
-                <rect
-                    x={0}
-                    y={0}
-                    width={width_mm}
-                    height={height_mm}
-                    fill={woodPatternFill}
-                    opacity={woodTextureOpacity}
-                />
+                <g opacity={woodTextureOpacity} fill={woodPatternFill}>
+                    {drawing.leafRects.map((r, i) => {
+                        const isFirstCol = r.colIdx === 0;
+                        const isLastCol = r.colIdx === rows[r.rowIdx].cols.length - 1;
+                        const isFirstRow = r.rowIdx === 0;
+                        const isLastRow = r.rowIdx === rows.length - 1;
+                        const fLeft = isFirstCol ? frame_mm : frame_mm / 2;
+                        const fRight = isLastCol ? frame_mm : frame_mm / 2;
+                        const fTop = isFirstRow ? frame_mm : frame_mm / 2;
+                        const fBottom = isLastRow ? frame_mm : frame_mm / 2;
+                        return (
+                            <rect key={`wood-f-${i}`} x={r.sx - fLeft} y={r.sy - fTop} width={r.sw + fLeft + fRight} height={r.sh + fTop + fBottom} />
+                        );
+                    })}
+                </g>
             )}
-            {/* Bordo interno telaio (separazione telaio/ante) */}
-            <rect 
-                x={frame_mm} y={frame_mm} width={innerW} height={innerH} 
-                fill="none" 
-                stroke={TECH_STYLE.FRAME_STROKE} 
-                strokeWidth={TECH_STYLE.STROKE_WIDTH_BEAD} 
-            />
+            <g stroke={outlineColor} strokeWidth={TECH_STYLE.STROKE_WIDTH_FRAME} fill="none">
+                {drawing.leafRects.map((r, i) => {
+                    const isFirstCol = r.colIdx === 0;
+                    const isLastCol = r.colIdx === rows[r.rowIdx].cols.length - 1;
+                    const isFirstRow = r.rowIdx === 0;
+                    const isLastRow = r.rowIdx === rows.length - 1;
+                    
+                    const fLeft = isFirstCol ? frame_mm : frame_mm / 2;
+                    const fRight = isLastCol ? frame_mm : frame_mm / 2;
+                    const fTop = isFirstRow ? frame_mm : frame_mm / 2;
+                    const fBottom = isLastRow ? frame_mm : frame_mm / 2;
+                    
+                    const isShorter = typeof rows[r.rowIdx].cols[r.colIdx]?.height_mm === 'number' && (rows[r.rowIdx].cols[r.colIdx]?.height_mm ?? 0) > 0;
+                    
+                    const rx = r.sx - fLeft;
+                    const ry = r.sy - fTop;
+                    const rw = r.sw + fLeft + fRight;
+                    // If shorter, its individual block ends at sh + fTop + full frame_mm
+                    const rh = r.sh + fTop + (isShorter ? frame_mm : fBottom);
+
+                    return (
+                        <g key={`outer-outline-${i}`}>
+                            {isFirstCol && <line x1={rx} y1={ry} x2={rx} y2={ry + rh} strokeLinecap="square" />}
+                            {isLastCol && <line x1={rx + rw} y1={ry} x2={rx + rw} y2={ry + rh} strokeLinecap="square" />}
+                            {isFirstRow && <line x1={rx} y1={ry} x2={rx + rw} y2={ry} strokeLinecap="square" />}
+                            {(isLastRow || isShorter) && <line x1={rx} y1={ry + rh} x2={rx + rw} y2={ry + rh} strokeLinecap="square" />}
+                            
+                            {!isLastRow && !isShorter && <line x1={rx} y1={ry + rh} x2={rx + rw} y2={ry + rh} strokeLinecap="square" />}
+                            
+                            {/* Bridges from a short leaf bottom ONLY down to actual master window height, ONLY if next door leaf is TALLER. To completely drop empty space bounding boxes, we just extend the taller leaf downwards and DO NOT CLOSE empty space. */}
+                            {/* Wait, the user wants empty space to be completely empty. So NO lines bridging downwards under a short leaf. It's just a shorter window! The space under it is NOT part of the window framework. */}
+                        </g>
+                    );
+                })}
+            </g>
+            <g fill="none" stroke={outlineColor} strokeWidth={TECH_STYLE.STROKE_WIDTH_BEAD}>
+                {drawing.leafRects.map((r, i) => <rect key={`inner-f-${i}`} x={r.sx} y={r.sy} width={r.sw} height={r.sh} />)}
+            </g>
             {drawing.nodes}
             {showDims && drawing.rowLabels.length > 0 && (
                 <>

@@ -41,7 +41,8 @@ export function SummarySection({
     const showIncl = !!showTotalIncl
     const vatPct = typeof vatPercent === 'number' && Number.isFinite(vatPercent) ? vatPercent : 22
     const displayedFinal = hasDiscount ? discountedTotal : originalTotal
-    const totalIncl = displayedFinal * (1 + vatPct / 100)
+    const vatAmount = displayedFinal * (vatPct / 100);
+    const totalIncl = displayedFinal + vatAmount
 
     return (
       <View style={s.block}>
@@ -134,7 +135,7 @@ export function SummarySection({
               </Text>
               {showIncl && (
                 <Text style={{ fontSize: 8, color: '#9ca3af', marginTop: 2 }}>
-                  IVA {vatPct}% · di cui {euro(displayedFinal * (vatPct / 100))}
+                  IVA {vatPct}% · di cui {euro(vatAmount)}
                 </Text>
               )}
             </View>

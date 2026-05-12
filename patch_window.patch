@@ -1,0 +1,58 @@
+--- src/features/quotes/window/WindowSvg.tsx
++++ src/features/quotes/window/WindowSvg.tsx
+@@ -270,14 +270,24 @@
+     const outlineColor = (safe as any).outline_color ?? '#000';
+ 
+     const drawing = rows.reduce((acc, row, rowIdx) => {
+-        const rowH = (usableH * row.height_ratio) / totalRowRatios; // actual row height in mm
+-        const y0 = frame_mm + acc.offsetY;
+         const logicalRatio = Number.isFinite(row.height_ratio) && row.height_ratio > 0
+             ? row.height_ratio
+             : (1 / Math.max(1, rows.length));
++
++        let rowH = 0;
++        let rowHeightLogicalMm = 0;
++        if (typeof row.max_height_mm === 'number' && row.max_height_mm > 0) {
++            const pxPerMm = usableH / height_mm;
++            rowH = row.max_height_mm * pxPerMm;
++            rowHeightLogicalMm = row.max_height_mm;
++        } else {
++            rowH = (usableH * row.height_ratio) / totalRowRatios;
++            rowHeightLogicalMm = logicalRatio * height_mm;
++        }
++        
++        const y0 = frame_mm + acc.offsetY;
+         const rowStartLogicalMm = acc.offsetLogicalMm;
+-        const rowHeightLogicalMm = logicalRatio * height_mm;
+         const rowEndLogicalMm = rowStartLogicalMm + rowHeightLogicalMm;
+         const rowHeightMm = rowH;
+         acc.rowDimensions.push({ rowIdx, top: y0, bottom: y0 + rowH, heightMm: rowHeightMm });
+@@ -311,18 +321,26 @@
+         row.cols.forEach((col, colIdx) => {
+             const startX = xCursor;
+             const colW = (usableW * ratioValues[colIdx]) / safeRatioSum;
+             
++            let colH = rowH;
++            let sy = y0;
++            if (typeof col.height_mm === 'number' && col.height_mm > 0) {
++                 const pxPerMm = usableH / height_mm;
++                 colH = col.height_mm * pxPerMm;
++                 sy = y0 + (rowH - colH);
++            }
++            
+             // Calcolo dimensioni profili (style tecnico)
+             // Sash Frame: ~55mm visuali (Molto più spessa)
+             // Nota: frame_mm aumentato a 34, aggiustato moltiplicatore per mantenere anta sui 55-60
+             const sashProfileW = Math.max(55, frame_mm * 1.7); 
+             // Fermavetro:ampiezza o spessore
+             const beadProfileW = 14;
+ 
+             // 1. Sash Frame Extents
+             const sx = startX;
+-            const sy = y0;
+             const sw = colW;
+-            const sh = rowH;
++            const sh = colH;
+ 
+             // 2. Bead Extents
+             const bx = sx + sashProfileW;

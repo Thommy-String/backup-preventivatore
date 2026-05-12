@@ -61,10 +61,35 @@ const pickDimension = (it: SurfaceItem, keys: string[]) => {
 }
 
 export const computeItemSurfaceMq = (it: SurfaceItem): number => {
+  const qty = pickNumber((it as any).qty) ?? 1
+  if (!qty || qty <= 0) return 0
+
+  // Se c'è una gridWindow, somma le aree reali tenendo conto di max_height_mm
+  // (per riga) e height_mm (per anta), così le finestre con ante di altezza
+  // ridotta non vengono sovrastimate.
+  const gw = (it as any)?.options?.gridWindow
+  if (gw && Array.isArray(gw.rows) && gw.rows.length > 0) {
+    const totalH = pickNumber(gw.height_mm) ?? pickNumber((it as any).height_mm) ?? 0
+    const rowRatios = gw.rows.map((r: any) => pickNumber(r?.height_ratio) ?? 0).map((v: number) => v > 0 ? v : 0)
+    const ratioSum = rowRatios.reduce((a: number, b: number) => a + b, 0) || gw.rows.length
+    let areaMm2 = 0
+    gw.rows.forEach((row: any, ri: number) => {
+      const maxH = pickNumber(row?.max_height_mm)
+      const rowH = (maxH && maxH > 0) ? maxH : (totalH * (rowRatios[ri] || 0)) / ratioSum
+      const cols = Array.isArray(row?.cols) ? row.cols : []
+      cols.forEach((col: any) => {
+        const w = pickNumber(col?.width_ratio) ?? 0
+        const colH = pickNumber(col?.height_mm)
+        const h = (colH && colH > 0) ? Math.min(colH, rowH) : rowH
+        if (w > 0 && h > 0) areaMm2 += w * h
+      })
+    })
+    if (areaMm2 > 0) return round2((areaMm2 / 1_000_000) * qty)
+  }
+
   const w = pickDimension(it, ['width_mm', 'larghezza_mm', 'larghezza', 'width'])
   const h = pickDimension(it, ['height_mm', 'altezza_mm', 'altezza', 'height'])
-  const qty = pickNumber((it as any).qty) ?? 1
-  if (!w || !h || w <= 0 || h <= 0 || !qty || qty <= 0) return 0
+  if (!w || !h || w <= 0 || h <= 0) return 0
   const mq = (w * h) / 1_000_000
   return round2(mq * qty)
 }

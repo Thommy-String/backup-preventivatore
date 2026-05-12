@@ -1,10 +1,46 @@
 //src/features/quotes/forms/WindowForm.tsx
 import { useState, useEffect } from "react";
+import * as React from "react";
 import type { ItemFormProps } from "../types";
 import type { WindowItem } from "../types";
 import type { GridWindowConfig, LeafState } from "../types";
-import { Trash2, Lock, Unlock } from "lucide-react";
+import { Trash2, Lock, Unlock, Plus, Ruler, Layers, Paintbrush2, Settings2, Hash } from "lucide-react";
 import { RalColorPicker } from "../components/RalColorPicker";
+
+// --- UI helpers (module scope: defining these inside WindowForm would remount on every render,
+// causing inputs to lose focus and the page to scroll to top on each keystroke) ---
+const SectionCard: React.FC<{
+    icon: React.ReactNode;
+    title: string;
+    subtitle?: string;
+    action?: React.ReactNode;
+    children: React.ReactNode;
+}> = ({ icon, title, subtitle, action, children }) => (
+    <section className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-100 bg-gray-50/60">
+            <div className="flex items-center gap-2.5 min-w-0">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white border border-gray-200 text-gray-600">
+                    {icon}
+                </span>
+                <div className="min-w-0">
+                    <div className="text-sm font-semibold text-gray-800 truncate">{title}</div>
+                    {subtitle && <div className="text-[11px] text-gray-500 truncate">{subtitle}</div>}
+                </div>
+            </div>
+            {action}
+        </header>
+        <div className="p-4 space-y-4">{children}</div>
+    </section>
+);
+
+const Field: React.FC<{ label: string; hint?: string; children: React.ReactNode; className?: string }> =
+    ({ label, hint, children, className }) => (
+        <div className={className}>
+            <label className="block text-[11px] font-medium uppercase tracking-wide text-gray-500 mb-1">{label}</label>
+            {children}
+            {hint && <div className="mt-1 text-[11px] text-gray-400">{hint}</div>}
+        </div>
+    );
 
 // --- Costanti e Tipi ---
 const openingOptions: { value: LeafState; label: string }[] = [
@@ -267,14 +303,67 @@ export function WindowForm({ draft, onChange }: ItemFormProps<WindowItem>) {
     const [rowHeightStr, setRowHeightStr] = useState<Record<number, string>>({});
     const [sashCountStr, setSashCountStr] = useState<Record<number, string>>({});
     const [colWidthStr, setColWidthStr] = useState<Record<string, string>>({});
+    const [colHeightStr, setColHeightStr] = useState<Record<string, string>>({});
+    const [rowMaxHeightStr, setRowMaxHeightStr] = useState<Record<number, string>>({});
     const [barOffsetStr, setBarOffsetStr] = useState<Record<string, string>>({});
-    const [handleHeightStr, setHandleHeightStr] = useState<string>('');
+    const [handleHeightStr, setHandleHeightStr] = useState<Record<string, string>>({});
     const [colLocked, setColLocked] = useState<Record<string, boolean>>({});
 
     const getRowLockedMask = (rowIndex: number) => {
         const row = grid?.rows?.[rowIndex];
         if (!row) return [] as boolean[];
         return row.cols.map((_, ci) => Boolean(colLocked[`${rowIndex}.${ci}`]));
+    };
+
+
+    const updateRowMaxHeight = (rowIndex: number, hm: number | undefined) => {
+        const rows = [...((getGrid()?.rows) || [])];
+        if (!rows[rowIndex]) return;
+        rows[rowIndex] = { ...rows[rowIndex], max_height_mm: hm };
+        onChange({ ...draft, options: { ...draft.options, gridWindow: { ...getGrid(), rows } } } as WindowItem);
+    };
+
+    const onRowMaxHeightChange = (ri: number, v: string) => {
+        if (allowMmInput(v)) setRowMaxHeightStr(prev => ({ ...prev, [ri]: v }));
+    };
+
+    const onRowMaxHeightBlur = (ri: number) => {
+        const raw = rowMaxHeightStr[ri] ?? '';
+        if (raw === '') {
+            updateRowMaxHeight(ri, undefined);
+            return;
+        }
+        const parsed = parseMmInput(raw);
+        if (parsed !== null) {
+            updateRowMaxHeight(ri, parsed);
+            setRowMaxHeightStr(prev => ({ ...prev, [ri]: formatMm(parsed) }));
+        }
+    };
+
+    const onColHeightChange = (ri: number, ci: number, v: string) => {
+        if (allowMmInput(v)) setColHeightStr(prev => ({ ...prev, [`${ri}.${ci}`]: v }));
+    };
+
+    const onColHeightBlur = (ri: number, ci: number) => {
+        const key = `${ri}.${ci}`;
+        const raw = colHeightStr[key] ?? '';
+        if (raw === '') {
+            const rows = [...((getGrid()?.rows) || [])];
+            if (rows[ri]?.cols[ci]) {
+                rows[ri].cols[ci] = { ...rows[ri].cols[ci], height_mm: undefined };
+                onChange({ ...draft, options: { ...draft.options, gridWindow: { ...getGrid(), rows } } } as WindowItem);
+            }
+            return;
+        }
+        const parsed = parseMmInput(raw);
+        if (parsed !== null) {
+            const rows = [...((getGrid()?.rows) || [])];
+            if (rows[ri]?.cols[ci]) {
+                rows[ri].cols[ci] = { ...rows[ri].cols[ci], height_mm: parsed };
+                onChange({ ...draft, options: { ...draft.options, gridWindow: { ...getGrid(), rows } } } as WindowItem);
+            }
+            setColHeightStr(prev => ({ ...prev, [key]: formatMm(parsed) }));
+        }
     };
 
     const toggleColLock = (rowIndex: number, colIndex: number) => {
@@ -293,9 +382,15 @@ export function WindowForm({ draft, onChange }: ItemFormProps<WindowItem>) {
 
     useEffect(() => {
         if (!grid) return;
-        const v = (grid as any).handle_height_mm;
-        setHandleHeightStr(typeof v === 'number' && Number.isFinite(v) ? formatMm(v) : '');
-    }, [grid?.handle_height_mm]);
+        const nextHandleHeights: Record<string, string> = {};
+        grid.rows.forEach((row, ri) => {
+            row.cols.forEach((col, ci) => {
+                const v = col.handle_height_mm;
+                nextHandleHeights[`${ri}.${ci}`] = typeof v === 'number' && Number.isFinite(v) ? formatMm(v) : '';
+            });
+        });
+        setHandleHeightStr(nextHandleHeights);
+    }, [grid?.rows]);
 
     // Sync string states from grid structure/values
     useEffect(() => {
@@ -619,27 +714,33 @@ export function WindowForm({ draft, onChange }: ItemFormProps<WindowItem>) {
     };
 
     return (
-        <div className="space-y-6">
-            {/* Titolo personalizzato voce */}
-            <section className="space-y-2">
-                <div className="text-sm font-medium text-gray-600">Titolo voce</div>
-                <input
-                    className="input"
-                    type="text"
-                    placeholder="es. Portafinestra soggiorno"
-                    value={(d as any).title ?? ""}
-                    onChange={(e) => applyPatch({ title: e.target.value })}
-                />
-                <div className="text-xs text-gray-500">
-                    Usato come titolo in editor e PDF. Se vuoto, verrà mostrato il tipo (es. “Finestra”).
+        <div className="space-y-5">
+            {/* === IDENTITÀ VOCE === */}
+            <SectionCard icon={<Hash size={16} />} title="Identità voce" subtitle="Titolo e riferimento usati in editor e PDF">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Field label="Titolo voce" hint="Se vuoto, verrà mostrato il tipo (es. “Finestra”).">
+                        <input
+                            className="input"
+                            type="text"
+                            placeholder="es. Portafinestra soggiorno"
+                            value={(d as any).title ?? ""}
+                            onChange={(e) => applyPatch({ title: e.target.value })}
+                        />
+                    </Field>
+                    <Field label="Riferimento" hint="Stanza, posizione o codice interno.">
+                        <input className="input" type="text" placeholder="es. Salotto" value={d.reference ?? ''} onChange={(e) => applyPatch({ reference: e.target.value })} />
+                    </Field>
                 </div>
-            </section>
-            <section className="space-y-2">
-                <div className="text-sm font-medium text-gray-600">Misure Totali e Quantità</div>
+            </SectionCard>
+
+            {/* === DIMENSIONI E QUANTITÀ === */}
+            <SectionCard
+                icon={<Ruler size={16} />}
+                title="Dimensioni totali"
+                subtitle="Misure complessive (telaio incluso) e numero di pezzi"
+            >
                 <div className="grid grid-cols-3 gap-3">
-                    {/* Input per Misure Totali e Pezzi */}
-                    <div>
-                        <label className="text-xs text-gray-500">Largh (mm)</label>
+                    <Field label="Larghezza (mm)">
                         <input
                             className="input"
                             type="text"
@@ -655,10 +756,9 @@ export function WindowForm({ draft, onChange }: ItemFormProps<WindowItem>) {
                                 handleMeasureUpdate('width_mm', widthStr);
                             }}
                         />
-                    </div>
+                    </Field>
 
-                    <div>
-                        <label className="text-xs text-gray-500">Altezza (mm)</label>
+                    <Field label="Altezza (mm)">
                         <input
                             className="input"
                             type="text"
@@ -674,10 +774,9 @@ export function WindowForm({ draft, onChange }: ItemFormProps<WindowItem>) {
                                 handleMeasureUpdate('height_mm', heightStr);
                             }}
                         />
-                    </div>
+                    </Field>
 
-                    <div>
-                        <label className="text-xs text-gray-500">Quantità</label>
+                    <Field label="Quantità">
                         <input
                             className="input"
                             type="text"
@@ -689,31 +788,39 @@ export function WindowForm({ draft, onChange }: ItemFormProps<WindowItem>) {
                                 if (v === '' || /^\d+$/.test(v)) setQtyStr(v);
                             }}
                             onBlur={() => {
-                                // se vuoto, default a 1; altrimenti clamp minimo 1
                                 const n = qtyStr === '' ? 1 : Math.max(1, Number(qtyStr) || 1);
                                 applyPatch({ qty: n as any });
                                 setQtyStr(String(n));
                             }}
                         />
-                    </div>
+                    </Field>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <input id="autosplit" type="checkbox" className="h-4 w-4" checked={autoSplit} onChange={(e) => setAutoSplit(e.target.checked)} />
-                    <label htmlFor="autosplit">Ripartisci automaticamente la larghezza tra le ante</label>
-                </div>
-            </section>
+                <label className="inline-flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                    <input type="checkbox" className="h-4 w-4 rounded border-gray-300" checked={autoSplit} onChange={(e) => setAutoSplit(e.target.checked)} />
+                    <span>Ripartisci automaticamente la larghezza tra le ante</span>
+                </label>
+            </SectionCard>
 
-            <section className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium text-gray-600">Struttura Finestra</div>
-                    <button type="button" onClick={addRow} className="btn btn-sm">+ Nuova riga</button>
-                </div>
+            {/* === STRUTTURA: RIGHE E ANTE === */}
+            <SectionCard
+                icon={<Layers size={16} />}
+                title="Struttura della finestra"
+                subtitle="Definisci righe (orizzontali) e ante per ciascuna riga"
+                action={
+                    <button type="button" onClick={addRow} className="btn btn-sm inline-flex items-center gap-1.5">
+                        <Plus size={14} /> Riga
+                    </button>
+                }
+            >
                 <div className="space-y-4">
                     {grid.rows.map((row, rowIndex) => (
-                        <div key={rowIndex} className="p-3 border rounded-lg bg-gray-50/50 space-y-3">
-                            <div className="flex items-center gap-4">
-                                <div className="flex-1">
-                                    <label className="text-xs text-gray-500">Altezza {rowIndex + 1} (mm)</label>
+                        <div key={rowIndex} className="rounded-xl border border-gray-200 bg-gray-50/40 overflow-hidden">
+                            {/* Header riga */}
+                            <div className="flex items-end gap-3 px-3 pt-3 pb-2 border-b border-gray-100 bg-white">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-indigo-50 text-indigo-600 text-xs font-bold border border-indigo-100">
+                                    R{rowIndex + 1}
+                                </div>
+                                <Field label={`Altezza riga (mm)`} className="flex-1">
                                     <input
                                         className="input"
                                         type="text"
@@ -725,9 +832,21 @@ export function WindowForm({ draft, onChange }: ItemFormProps<WindowItem>) {
                                         onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
                                         onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }}
                                     />
-                                </div>
-                                <div className="flex-1">
-                                    <label className="text-xs text-gray-500">Numero Ante</label>
+                                </Field>
+                                <Field label="Max alt. (mm)" className="w-32">
+                                    <input
+                                        className="input"
+                                        type="text"
+                                        inputMode="decimal"
+                                        placeholder="opz."
+                                        title="Altezza massima riga (opzionale)"
+                                        value={rowMaxHeightStr[rowIndex] ?? (getGrid()?.rows || [])[rowIndex]?.max_height_mm ?? ''}
+                                        onChange={(e) => onRowMaxHeightChange(rowIndex, e.target.value)}
+                                        onBlur={() => onRowMaxHeightBlur(rowIndex)}
+                                        onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                                    />
+                                </Field>
+                                <Field label="N° ante" className="w-28" hint={`≈ ${formatMm(grid.width_mm / Math.max(1, row.cols.length))} mm ad anta`}>
                                     <input
                                         className="input"
                                         type="text"
@@ -739,268 +858,283 @@ export function WindowForm({ draft, onChange }: ItemFormProps<WindowItem>) {
                                         onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
                                         onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }}
                                     />
-                                    <div className="mt-1 text-xs text-gray-500">
-                                        {`≈ ${formatMm(grid.width_mm / Math.max(1, row.cols.length))} mm ad anta`}
-                                    </div>
-                                </div>
+                                </Field>
                                 {grid.rows.length > 1 && (
-                                    <button type="button" onClick={() => removeRow(rowIndex)} className="btn-icon text-gray-400 hover:text-red-500 mt-4" title="Rimuovi riga"><Trash2 size={16} /></button>
+                                    <button type="button" onClick={() => removeRow(rowIndex)} className="btn-icon text-gray-400 hover:text-red-500 mb-1" title="Rimuovi riga"><Trash2 size={16} /></button>
                                 )}
                             </div>
 
-                            {row.cols.map((col, colIndex) => (
-                                <div key={colIndex}>
-                                    <label className="text-xs text-gray-500">Apertura Anta {rowIndex + 1}.{colIndex + 1}</label>
-                                    <select
-                                        className="input"
-                                        value={col.leaf?.state ?? 'fissa'}
-                                        onChange={e => updateSashOpening(rowIndex, colIndex, e.target.value as LeafState)}
-                                    >
-                                        {openingOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                                    </select>
-                                    {/* Per-anta glazing selector */}
-                                    <div className="mt-2">
-                                        <label className="text-xs text-gray-500">Vetro Anta {rowIndex + 1}.{colIndex + 1}</label>
-                                        <select
-                                            className="input"
-                                            value={(col as any).glazing ?? grid.glazing}
-                                            onChange={(e) => updateSashGlazing(rowIndex, colIndex, e.target.value as GridWindowConfig['glazing'])}
-                                        >
-                                            <option value="singolo">Singolo</option>
-                                            <option value="doppio">Doppio</option>
-                                            <option value="triplo">Triplo</option>
-                                            <option value="satinato">Satinato</option>
-                                        </select>
-                                    </div>
-                                    {(() => {
-                                        const state = col.leaf?.state ?? 'fissa';
-                                        const canHaveHandle = state !== 'fissa';
-                                        const handleChecked = Boolean(col.handle);
-                                        const inputId = `handle-${rowIndex}-${colIndex}`;
-                                        return (
-                                            <div className="mt-3 space-y-2">
-                                                <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                    <input
-                                                        id={inputId}
-                                                        type="checkbox"
-                                                        className="h-4 w-4"
-                                                        checked={handleChecked}
-                                                        disabled={!canHaveHandle}
-                                                        onChange={(e) => updateSashHandle(rowIndex, colIndex, e.target.checked)}
-                                                    />
-                                                    <label htmlFor={inputId} className={!canHaveHandle ? 'text-gray-400 line-through' : ''}>
-                                                        Maniglia
-                                                    </label>
-                                                </div>
-                                                {handleChecked && (state === 'apre_sx' || state === 'apre_dx' || state === 'apre_sx+vasistas' || state === 'apre_dx+vasistas') && (
-                                                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                        <span>Altezza da terra (mm)</span>
-                                                        <input
-                                                            className="input w-20"
-                                                            type="text"
-                                                            inputMode="decimal"
-                                                            pattern="\\d+([.,]\\d{0,1})?"
-                                                            placeholder={String(Math.round((grid.height_mm || 1500) / 2))}
-                                                            value={handleHeightStr}
-                                                            onChange={(e) => {
-                                                                const v = e.target.value;
-                                                                if (allowMmInput(v)) {
-                                                                    setHandleHeightStr(v);
-                                                                }
-                                                            }}
-                                                            onBlur={() => {
-                                                                const raw = handleHeightStr ?? '';
-                                                                if (raw === '') {
-                                                                    handleGridChange({ handle_height_mm: undefined } as any);
-                                                                    return;
-                                                                }
-                                                                const parsed = parseMmInput(raw);
-                                                                if (parsed === null) return;
-                                                                const clamped = Math.max(MIN_MM, Math.min(grid.height_mm || 1500, parsed));
-                                                                handleGridChange({ handle_height_mm: roundMm(clamped) } as any);
-                                                                setHandleHeightStr(formatMm(roundMm(clamped)));
-                                                            }}
-                                                            onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
-                                                            onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }}
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })()}
-                                    {(() => {
-                                        const barKey = `${rowIndex}.${colIndex}`;
-                                        const bar = col.leaf?.horizontalBars?.[0];
-                                        const hasBar = Boolean(bar);
-                                        const checkboxId = `bar-${rowIndex}-${colIndex}`;
-                                        const rowHeight = interpretRowHeight(row);
-                                        let storedValue = '';
-                                        if (bar && Number.isFinite(bar.offset_mm)) {
-                                            const raw = Math.max(MIN_MM, Math.min(rowHeight, bar.offset_mm));
-                                            const bottomValue = bar.origin === 'bottom'
-                                                ? raw
-                                                : Math.max(MIN_MM, Math.min(rowHeight, rowHeight - raw));
-                                            storedValue = formatMm(bottomValue);
-                                        }
-                                        return (
-                                            <div className="mt-3 space-y-2">
-                                                <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                    <input
-                                                        id={checkboxId}
-                                                        type="checkbox"
-                                                        className="h-4 w-4"
-                                                        checked={hasBar}
-                                                        onChange={(e) => {
-                                                            if (e.target.checked) {
-                                                                const frameVal = grid.frame_mm ?? FRAME_MM;
-                                                                const baseMin = MULLION_MM / 2;
-                                                                const safeMin = Math.min(rowHeight / 2, Math.max(baseMin, frameVal * 0.12));
-                                                                const safeMax = Math.max(safeMin, rowHeight - safeMin);
-                                                                const rawDefault = rowHeight / 2 || safeMin;
-                                                                const defaultOffset = roundMm(Math.min(safeMax, Math.max(safeMin, rawDefault)));
-                                                                updateSashHorizontalBar(rowIndex, colIndex, defaultOffset);
-                                                                setBarOffsetStr(prev => ({ ...prev, [barKey]: formatMm(defaultOffset) }));
-                                                            } else {
-                                                                updateSashHorizontalBar(rowIndex, colIndex, null);
-                                                                setBarOffsetStr(prev => {
-                                                                    const next = { ...prev };
-                                                                    delete next[barKey];
-                                                                    return next;
-                                                                });
-                                                            }
-                                                        }}
-                                                    />
-                                                    <label htmlFor={checkboxId}>Traverso orizzontale</label>
-                                                </div>
-                                                {hasBar && (
-                                                    <div>
-                                                        <label className="text-xs text-gray-500">Altezza dal bordo inferiore (mm)</label>
-                                                        <input
-                                                            className="input"
-                                                            type="text"
-                                                            inputMode="decimal"
-                                                            pattern="\\d+([.,]\\d{0,1})?"
-                                                            value={barOffsetStr[barKey] ?? storedValue}
-                                                            onChange={(e) => {
-                                                                const v = e.target.value;
-                                                                if (allowMmInput(v)) {
-                                                                    setBarOffsetStr(prev => ({ ...prev, [barKey]: v }));
-                                                                }
-                                                            }}
-                                                            onBlur={() => {
-                                                                const raw = barOffsetStr[barKey] ?? '';
-                                                                if (raw === '') return;
-                                                                const parsed = parseMmInput(raw);
-                                                                if (parsed === null) return;
-                                                                updateSashHorizontalBar(rowIndex, colIndex, parsed);
-                                                                setBarOffsetStr(prev => ({ ...prev, [barKey]: formatMm(parsed) }));
-                                                            }}
-                                                            onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
-                                                            onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }}
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })()}
-                                    {(() => {
-                                        // Compute the TOTAL width per-anta (including telai/montanti) from ratios
-                                        const colTotalMm = formatMm(col.width_ratio ?? 0);
+                            {/* Griglia ante */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3">
+                            {row.cols.map((col, colIndex) => {
+                                const state = col.leaf?.state ?? 'fissa';
+                                const canHaveHandle = state !== 'fissa';
+                                const handleChecked = Boolean(col.handle);
+                                const handleId = `handle-${rowIndex}-${colIndex}`;
+                                const barKey = `${rowIndex}.${colIndex}`;
+                                const bar = col.leaf?.horizontalBars?.[0];
+                                const hasBar = Boolean(bar);
+                                const barId = `bar-${rowIndex}-${colIndex}`;
+                                const rowHeight = interpretRowHeight(row);
+                                let storedBarValue = '';
+                                if (bar && Number.isFinite(bar.offset_mm)) {
+                                    const raw = Math.max(MIN_MM, Math.min(rowHeight, bar.offset_mm));
+                                    const bottomValue = bar.origin === 'bottom'
+                                        ? raw
+                                        : Math.max(MIN_MM, Math.min(rowHeight, rowHeight - raw));
+                                    storedBarValue = formatMm(bottomValue);
+                                }
+                                const lockKey = `${rowIndex}.${colIndex}`;
+                                const isLocked = Boolean(colLocked[lockKey]);
+                                const colTotalMm = formatMm(col.width_ratio ?? 0);
 
-                                        return (
-                                            <div className="mt-2">
-                                                <div className="text-[11px] text-gray-400 mb-1">
-                                                    {autoSplit
-                                                        ? "Auto-ripartizione attiva: larghezze uguali sul totale"
-                                                        : "Imposta larghezza TOTALE anta (mm)"}
+                                return (
+                                <div key={colIndex} className="rounded-lg border border-gray-200 bg-white p-3 space-y-3">
+                                    {/* Header anta */}
+                                    <div className="flex items-center justify-between">
+                                        <div className="inline-flex items-center gap-2">
+                                            <span className="inline-flex h-6 px-2 items-center rounded-md bg-gray-100 text-[11px] font-semibold text-gray-700 border border-gray-200">
+                                                Anta {rowIndex + 1}.{colIndex + 1}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Apertura + Vetro */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Field label="Apertura">
+                                            <select
+                                                className="input"
+                                                value={state}
+                                                onChange={e => updateSashOpening(rowIndex, colIndex, e.target.value as LeafState)}
+                                            >
+                                                {openingOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                                            </select>
+                                        </Field>
+                                        <Field label="Vetro">
+                                            <select
+                                                className="input"
+                                                value={(col as any).glazing ?? grid.glazing}
+                                                onChange={(e) => updateSashGlazing(rowIndex, colIndex, e.target.value as GridWindowConfig['glazing'])}
+                                            >
+                                                <option value="singolo">Singolo</option>
+                                                <option value="doppio">Doppio</option>
+                                                <option value="triplo">Triplo</option>
+                                                <option value="satinato">Satinato</option>
+                                            </select>
+                                        </Field>
+                                    </div>
+
+                                    {/* Maniglia + altezza */}
+                                    <div className="rounded-md bg-gray-50 border border-gray-100 p-2 space-y-2">
+                                        <label className={`flex items-center gap-2 text-sm select-none ${canHaveHandle ? 'text-gray-700 cursor-pointer' : 'text-gray-400'}`}>
+                                            <input
+                                                id={handleId}
+                                                type="checkbox"
+                                                className="h-4 w-4 rounded border-gray-300"
+                                                checked={handleChecked}
+                                                disabled={!canHaveHandle}
+                                                onChange={(e) => updateSashHandle(rowIndex, colIndex, e.target.checked)}
+                                            />
+                                            <span>Maniglia</span>
+                                            {!canHaveHandle && <span className="text-[10px] text-gray-400">(solo per ante apribili)</span>}
+                                        </label>
+                                        {handleChecked && (state === 'apre_sx' || state === 'apre_dx' || state === 'apre_sx+vasistas' || state === 'apre_dx+vasistas') && (
+                                            <Field label="Altezza maniglia da terra (mm)">
+                                                <input
+                                                    className="input"
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    pattern="\\d+([.,]\\d{0,1})?"
+                                                    placeholder={String(Math.round((grid.height_mm || 1500) / 2))}
+                                                    value={handleHeightStr[`${rowIndex}.${colIndex}`] ?? ''}
+                                                    onChange={(e) => {
+                                                        const v = e.target.value;
+                                                        if (allowMmInput(v)) setHandleHeightStr(prev => ({ ...prev, [`${rowIndex}.${colIndex}`]: v }));
+                                                    }}
+                                                    onBlur={() => {
+                                                        const key = `${rowIndex}.${colIndex}`;
+                                                        const raw = handleHeightStr[key] ?? '';
+                                                        const newRows = grid.rows.map((r, ri) => {
+                                                            if (ri !== rowIndex) return r;
+                                                            return {
+                                                                ...r,
+                                                                cols: r.cols.map((c, ci) => {
+                                                                    if (ci !== colIndex) return c;
+                                                                    if (raw === '') return { ...c, handle_height_mm: undefined };
+                                                                    const parsed = parseMmInput(raw);
+                                                                    if (parsed === null) return c;
+                                                                    const clamped = roundMm(Math.max(MIN_MM, Math.min(grid.height_mm || 1500, parsed)));
+                                                                    setHandleHeightStr(prev => ({ ...prev, [key]: formatMm(clamped) }));
+                                                                    return { ...c, handle_height_mm: clamped };
+                                                                }),
+                                                            };
+                                                        });
+                                                        handleRowsChange(newRows);
+                                                    }}
+                                                    onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                                                    onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }}
+                                                />
+                                            </Field>
+                                        )}
+                                    </div>
+
+                                    {/* Traverso orizzontale */}
+                                    <div className="rounded-md bg-gray-50 border border-gray-100 p-2 space-y-2">
+                                        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+                                            <input
+                                                id={barId}
+                                                type="checkbox"
+                                                className="h-4 w-4 rounded border-gray-300"
+                                                checked={hasBar}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        const frameVal = grid.frame_mm ?? FRAME_MM;
+                                                        const baseMin = MULLION_MM / 2;
+                                                        const safeMin = Math.min(rowHeight / 2, Math.max(baseMin, frameVal * 0.12));
+                                                        const safeMax = Math.max(safeMin, rowHeight - safeMin);
+                                                        const rawDefault = rowHeight / 2 || safeMin;
+                                                        const defaultOffset = roundMm(Math.min(safeMax, Math.max(safeMin, rawDefault)));
+                                                        updateSashHorizontalBar(rowIndex, colIndex, defaultOffset);
+                                                        setBarOffsetStr(prev => ({ ...prev, [barKey]: formatMm(defaultOffset) }));
+                                                    } else {
+                                                        updateSashHorizontalBar(rowIndex, colIndex, null);
+                                                        setBarOffsetStr(prev => {
+                                                            const next = { ...prev };
+                                                            delete next[barKey];
+                                                            return next;
+                                                        });
+                                                    }
+                                                }}
+                                            />
+                                            <span>Traverso orizzontale</span>
+                                        </label>
+                                        {hasBar && (
+                                            <Field label="Altezza dal bordo inferiore (mm)">
+                                                <input
+                                                    className="input"
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    pattern="\\d+([.,]\\d{0,1})?"
+                                                    value={barOffsetStr[barKey] ?? storedBarValue}
+                                                    onChange={(e) => {
+                                                        const v = e.target.value;
+                                                        if (allowMmInput(v)) setBarOffsetStr(prev => ({ ...prev, [barKey]: v }));
+                                                    }}
+                                                    onBlur={() => {
+                                                        const raw = barOffsetStr[barKey] ?? '';
+                                                        if (raw === '') return;
+                                                        const parsed = parseMmInput(raw);
+                                                        if (parsed === null) return;
+                                                        updateSashHorizontalBar(rowIndex, colIndex, parsed);
+                                                        setBarOffsetStr(prev => ({ ...prev, [barKey]: formatMm(parsed) }));
+                                                    }}
+                                                    onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                                                    onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }}
+                                                />
+                                            </Field>
+                                        )}
+                                    </div>
+
+                                    {/* Misure dell'anta */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {autoSplit ? (
+                                            <Field label="Larghezza anta" hint="Auto-ripartizione attiva">
+                                                <div className="input flex items-center text-sm text-gray-700 bg-gray-50">
+                                                    <b className="mr-1">{formatMm(grid.width_mm / Math.max(1, row.cols.length))}</b> mm
                                                 </div>
-                                                {autoSplit ? (
-                                                    <div className="text-xs text-gray-600">Larghezza totale stimata: <b>{formatMm(grid.width_mm / Math.max(1, row.cols.length))} mm</b></div>
-                                                ) : (
-                                                    <>
-                                                        <div className="flex items-center gap-2">
-                                                            <label className="text-xs text-gray-500">Larghezza Anta {rowIndex + 1}.{colIndex + 1} (totale mm)</label>
-                                                            {(() => {
-                                                                const lockKey = `${rowIndex}.${colIndex}`;
-                                                                const isLocked = Boolean(colLocked[lockKey]);
-                                                                return (
-                                                                    <button type="button" title={isLocked ? 'Sblocco misura' : 'Blocca misura'} onClick={() => toggleColLock(rowIndex, colIndex)} className="p-1 rounded">
-                                                                        {isLocked ? <Lock size={16} /> : <Unlock size={16} />}
-                                                                    </button>
-                                                                );
-                                                            })()}
-                                                        </div>
-                                                        <input
-                                                            className={`input ${Boolean(colLocked[`${rowIndex}.${colIndex}`]) ? 'bg-gray-100' : ''}`}
-                                                            type="text"
-                                                            inputMode="decimal"
-                                                            pattern="\\d+([.,]\\d{0,1})?"
-                                                            value={colWidthStr[`${rowIndex}.${colIndex}`] ?? colTotalMm}
-                                                            onChange={(e) => onColWidthChange(rowIndex, colIndex, e.target.value)}
-                                                            onBlur={() => onColWidthBlur(rowIndex, colIndex)}
-                                                            onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
-                                                            onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }}
-                                                        />
-                                                    </>
-                                                )}
-                                            </div>
-                                        );
-                                    })()}
+                                            </Field>
+                                        ) : (
+                                            <Field label={`Larghezza (mm)`}>
+                                                <div className="relative">
+                                                    <input
+                                                        className={`input pr-9 ${isLocked ? 'bg-gray-100' : ''}`}
+                                                        type="text"
+                                                        inputMode="decimal"
+                                                        pattern="\\d+([.,]\\d{0,1})?"
+                                                        value={colWidthStr[lockKey] ?? colTotalMm}
+                                                        onChange={(e) => onColWidthChange(rowIndex, colIndex, e.target.value)}
+                                                        onBlur={() => onColWidthBlur(rowIndex, colIndex)}
+                                                        onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                                                        onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        title={isLocked ? 'Sblocca misura' : 'Blocca misura'}
+                                                        onClick={() => toggleColLock(rowIndex, colIndex)}
+                                                        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-700"
+                                                    >
+                                                        {isLocked ? <Lock size={14} /> : <Unlock size={14} />}
+                                                    </button>
+                                                </div>
+                                            </Field>
+                                        )}
+                                        <Field label="Altezza speciale (mm)" hint="Lascia vuoto per usare l'altezza riga">
+                                            <input
+                                                className="input"
+                                                type="text"
+                                                inputMode="decimal"
+                                                placeholder="—"
+                                                value={colHeightStr[lockKey] ?? (getGrid()?.rows || [])[rowIndex]?.cols[colIndex]?.height_mm ?? ''}
+                                                onChange={(e) => onColHeightChange(rowIndex, colIndex, e.target.value)}
+                                                onBlur={() => onColHeightBlur(rowIndex, colIndex)}
+                                                onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                                            />
+                                        </Field>
+                                    </div>
                                 </div>
-                            ))}
+                                );
+                            })}
+                            </div>
                         </div>
                     ))}
                 </div>
-            </section>
+            </SectionCard>
 
-            <section className="space-y-2">
-                <div className="text-sm font-medium text-gray-600">Vetro</div>
-                <div className="grid grid-cols-2 gap-3">
-                    {/* Vetrocamera */}
-                    <div>
-                        <label className="text-xs text-gray-500">Vetrocamera</label>
-                        <select
-                            className="input"
-                            value={VETROCAMERA_OPTIONS.includes((d as any).glass_spec) ? (d as any).glass_spec : 'custom'}
-                            onChange={(e) => {
-                                if (VETROCAMERA_OPTIONS.includes(e.target.value as any)) {
-                                    applyPatch({ glass_spec: e.target.value });
-                                } else {
-                                    applyPatch({ glass_spec: '' });
-                                }
-                            }}
-                        >
-                            {VETROCAMERA_OPTIONS.map(option => (
-                                <option key={option} value={option}>{option}</option>
-                            ))}
-                            <option value="custom">Personalizzato</option>
-                        </select>
-                        {(!VETROCAMERA_OPTIONS.includes((d as any).glass_spec)) && (
-                            <input
-                                className="input mt-1"
-                                type="text"
-                                placeholder="Inserisci vetrocamera personalizzata"
-                                value={(d as any).glass_spec ?? ''}
-                                onChange={(e) => applyPatch({ glass_spec: e.target.value || null })}
-                            />
-                        )}
-                    </div>
-                    <div>
-                        <label className="text-xs text-gray-500">Riferimento</label>
-                        <input className="input" type="text" placeholder="es. Salotto" value={d.reference ?? ''} onChange={(e) => applyPatch({ reference: e.target.value })} />
-                    </div>
-                </div>
-            </section>
+            {/* === VETRO === */}
+            <SectionCard
+                icon={<Settings2 size={16} />}
+                title="Vetro"
+                subtitle="Composizione vetrocamera"
+            >
+                <Field label="Vetrocamera">
+                    <select
+                        className="input"
+                        value={VETROCAMERA_OPTIONS.includes((d as any).glass_spec) ? (d as any).glass_spec : 'custom'}
+                        onChange={(e) => {
+                            if (VETROCAMERA_OPTIONS.includes(e.target.value as any)) {
+                                applyPatch({ glass_spec: e.target.value });
+                            } else {
+                                applyPatch({ glass_spec: '' });
+                            }
+                        }}
+                    >
+                        {VETROCAMERA_OPTIONS.map(option => (
+                            <option key={option} value={option}>{option}</option>
+                        ))}
+                        <option value="custom">Personalizzato</option>
+                    </select>
+                    {(!VETROCAMERA_OPTIONS.includes((d as any).glass_spec)) && (
+                        <input
+                            className="input mt-2"
+                            type="text"
+                            placeholder="Inserisci vetrocamera personalizzata"
+                            value={(d as any).glass_spec ?? ''}
+                            onChange={(e) => applyPatch({ glass_spec: e.target.value || null })}
+                        />
+                    )}
+                </Field>
+            </SectionCard>
 
-            {/* Finiture & Dati tecnici */}
-            <section className="space-y-3">
-                <div className="text-sm font-medium text-gray-600">Finiture &amp; Dati tecnici</div>
-                
-                {/* Colore profilo su riga dedicata */}
+            {/* === FINITURE === */}
+            <SectionCard
+                icon={<Paintbrush2 size={16} />}
+                title="Finiture"
+                subtitle="Colori del profilo, della maniglia e della ferramenta"
+            >
                 <div>
-                    <div className="mb-1 flex items-center justify-between gap-3">
-                        <div className="text-xs text-gray-500">Colore profilo</div>
-                        <label className="inline-flex items-center gap-2 text-xs text-gray-600">
+                    <div className="mb-1.5 flex items-center justify-between gap-3">
+                        <div className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Colore profilo</div>
+                        <label className="inline-flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
                             <input
                                 type="checkbox"
                                 className="h-4 w-4 rounded border-gray-300 text-amber-700"
@@ -1017,7 +1151,7 @@ export function WindowForm({ draft, onChange }: ItemFormProps<WindowItem>) {
                         onLabelChange={(text) => applyPatch({ color: text })}
                         onRalSelect={(ral) => {
                              applyPatch(
-                                { color: `${ral.code} ${ral.name}` }, 
+                                { color: `${ral.code} ${ral.name}` },
                                 { frame_color: ral.hex } as any
                              );
                         }}
@@ -1025,7 +1159,7 @@ export function WindowForm({ draft, onChange }: ItemFormProps<WindowItem>) {
                 </div>
 
                 <div>
-                    <div className="text-xs text-gray-500 mb-1">Colore maniglia</div>
+                    <div className="text-[11px] font-medium uppercase tracking-wide text-gray-500 mb-1.5">Colore maniglia</div>
                     <RalColorPicker
                         previewColor={(grid as any)?.handle_color ?? '#ffffff'}
                         labelValue={(d as any).handle_color ?? ''}
@@ -1040,21 +1174,25 @@ export function WindowForm({ draft, onChange }: ItemFormProps<WindowItem>) {
                     />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                    {/* Colore cerniere / ferramenta */}
-                    <div>
-                        <label className="text-xs text-gray-500">Colore cerniere</label>
-                        <input
-                            className="input w-full"
-                            type="text"
-                            placeholder="Es. Bianco / Inox / Nero"
-                            value={(d as any).hinges_color ?? ''}
-                            onChange={(e) => applyPatch({ hinges_color: e.target.value })}
-                        />
-                    </div>
-                    {/* Sistema profilo */}
-                    <div>
-                        <label className="text-xs text-gray-500">Sistema profilo</label>
+                <Field label="Colore cerniere">
+                    <input
+                        className="input w-full"
+                        type="text"
+                        placeholder="Es. Bianco / Inox / Nero"
+                        value={(d as any).hinges_color ?? ''}
+                        onChange={(e) => applyPatch({ hinges_color: e.target.value })}
+                    />
+                </Field>
+            </SectionCard>
+
+            {/* === DATI TECNICI === */}
+            <SectionCard
+                icon={<Settings2 size={16} />}
+                title="Dati tecnici"
+                subtitle="Sistema profilo e prestazioni energetiche"
+            >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Field label="Sistema profilo">
                         <select
                             className="input w-full"
                             value={(d as any).profile_system ?? ''}
@@ -1065,10 +1203,8 @@ export function WindowForm({ draft, onChange }: ItemFormProps<WindowItem>) {
                                 <option key={opt} value={opt}>{opt}</option>
                             ))}
                         </select>
-                    </div>
-                    {/* Uw (trasmittanza) */}
-                    <div>
-                        <label className="text-xs text-gray-500">Uw (W/m²K)</label>
+                    </Field>
+                    <Field label="Uw (W/m²K)" hint="Trasmittanza termica">
                         <input
                             className="input w-full"
                             type="text"
@@ -1079,9 +1215,9 @@ export function WindowForm({ draft, onChange }: ItemFormProps<WindowItem>) {
                                 applyPatch({ uw: raw === '' ? null : raw as any });
                             }}
                         />
-                    </div>
+                    </Field>
                 </div>
-            </section>
+            </SectionCard>
         </div>
     );
 }

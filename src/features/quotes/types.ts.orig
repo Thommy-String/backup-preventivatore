@@ -70,10 +70,8 @@ export type GridWindowConfig = {
   /** righe della griglia: ciascuna ha un'altezza relativa e una lista di colonne con larghezze relative */
   rows: Array<{
     height_ratio: number
-    max_height_mm?: number
     cols: Array<{
       width_ratio: number
-      height_mm?: number
       /**
        * Stato della singola anta (facoltativo se pannello fisso).
        * spanId/spanLeader permettono di legare più pannelli verticalmente per
@@ -89,8 +87,6 @@ export type GridWindowConfig = {
       glazing?: GridWindowConfig['glazing']
       /** presenza della maniglia */
       handle?: boolean
-      /** altezza maniglia da terra in mm per questa specifica anta (sovrascrive handle_height_mm della griglia) */
-      handle_height_mm?: number
     }>
   }>
 }

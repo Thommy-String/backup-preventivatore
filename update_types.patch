@@ -1,0 +1,11 @@
+--- src/features/quotes/types.ts
++++ src/features/quotes/types.ts
+@@ -82,6 +82,8 @@
+   /** righe della griglia: ciascuna ha un'altezza relativa e una lista di colonne con larghezze relative */
+   rows: Array<{
+     height_ratio: number
++    max_height_mm?: number
+     cols: Array<{
+       width_ratio: number
++      height_mm?: number
+       /**
