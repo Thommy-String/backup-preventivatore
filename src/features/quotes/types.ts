@@ -125,7 +125,7 @@ export type WindowItem = BaseItem & {
   glass?: string | null
   glass_spec?: string | null
   hinges_color?: string | null
-  uw?: number | null
+  uw?: string | number | null
   profile_system?: string | null
   /** Opzioni avanzate per disegno finestra */
   options?: { gridWindow?: GridWindowConfig }

@@ -18,7 +18,7 @@ export type FinestraItem = BaseItem & {
   color?: string | null
   glass?: string | null
   hinges_color?: string | null
-  uw?: number | null
+  uw?: string | number | null
 }
 
 export type CassonettoItem = BaseItem & {

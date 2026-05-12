@@ -1,5 +1,5 @@
 import { supabase } from './lib/supabase'
-import xInfissiLogo from '../assets/images/x-infissi-logo.png'
+import xInfissiLogo from './assets/images/x-infissi-logo.png'
 
 function App() {
   async function handleNewQuote() {

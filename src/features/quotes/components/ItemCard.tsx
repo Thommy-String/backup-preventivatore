@@ -243,10 +243,10 @@ export function ItemCard({ item: it, onEdit, onDuplicate, onRemove }: Props) {
                                         <span className="text-gray-900">{(it as any).glass}</span>
                                     </div>
                                 )}
-                                {typeof (it as any).uw === 'number' && (
+                                {(it as any).uw != null && String((it as any).uw).trim() !== '' && (
                                     <div className="flex items-center gap-2 text-sm">
                                         <span className="text-gray-500 font-medium">Uw:</span>
-                                        <span className="text-gray-900">{(it as any).uw} W/m²K</span>
+                                        <span className="text-gray-900">{(it as any).uw}</span>
                                     </div>
                                 )}
 

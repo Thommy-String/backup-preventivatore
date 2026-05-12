@@ -1071,15 +1071,12 @@ export function WindowForm({ draft, onChange }: ItemFormProps<WindowItem>) {
                         <label className="text-xs text-gray-500">Uw (W/m²K)</label>
                         <input
                             className="input w-full"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            placeholder="Es. 1.3"
-                            value={typeof (d as any).uw === 'number' ? String((d as any).uw) : ''}
+                            type="text"
+                            placeholder="Es. 1.3 oppure ≤ 1.1 W/m²K"
+                            value={(d as any).uw != null ? String((d as any).uw) : ''}
                             onChange={(e) => {
                                 const raw = e.target.value;
-                                const num = raw === '' ? null : Number(raw);
-                                applyPatch({ uw: (raw === '' || Number.isNaN(num)) ? null : num as any });
+                                applyPatch({ uw: raw === '' ? null : raw as any });
                             }}
                         />
                     </div>

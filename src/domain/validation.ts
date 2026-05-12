@@ -19,7 +19,7 @@ export const FinestraSchema = BaseSchema.extend({
   color: z.string().nullable().optional(),
   glass: z.string().nullable().optional(),
   hinges_color: z.string().nullable().optional(),
-  uw: z.number().nullable().optional()
+  uw: z.union([z.string(), z.number()]).nullable().optional()
 })
 
 export const CassonettoSchema = BaseSchema.extend({

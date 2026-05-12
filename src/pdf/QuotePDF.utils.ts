@@ -204,9 +204,12 @@ export function detailPairs(it: any): Array<[string, string]> {
   if (foil) pairs.push(['Pellicola', String(foil)])
 
   const uwRaw = pickFirst(it, ['uw'])
-  const uwLabel = uwRaw !== undefined && uwRaw !== null && String(uwRaw).trim() !== ''
-    ? `<= ${String(uwRaw)} W/m²K`
-    : undefined
+  const uwLabel = (() => {
+    if (uwRaw === undefined || uwRaw === null || String(uwRaw).trim() === '') return undefined
+    const val = String(uwRaw).trim()
+    const alreadyHasUnit = val.toLowerCase().includes('w/m') || val.toLowerCase().includes('w m')
+    return alreadyHasUnit ? val : `${val} W/m²K`
+  })()
 
   const showHandlePosition = kindLower !== 'porta_interna' && kindLower !== 'porta_blindata'
   const handlePositionLabel = showHandlePosition
