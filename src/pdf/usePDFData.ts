@@ -392,6 +392,11 @@ const [quote, manualTotals, items, profileOverview] = useQuoteStore(
       (isStr(q.install_time) && q.install_time) ||
       null;
 
+    const deliveryWeeks =
+      (isStr(q.deliveryWeeks) && q.deliveryWeeks) ||
+      (isStr(q.delivery_weeks) && q.delivery_weeks) ||
+      null;
+
     const profileSystem =
       (isStr(q.profileSystem) && q.profileSystem) ||
       (isStr(q.profile_system) && q.profile_system) ||
@@ -489,6 +494,7 @@ const [quote, manualTotals, items, profileOverview] = useQuoteStore(
 
       issueDate,
       installTime,
+      deliveryWeeks,
       showShippingIncluded,
       totalMq: isNum(q.total_mq) ? q.total_mq : (isNum(q.totalMq) ? q.totalMq : null),
       profileSystem,

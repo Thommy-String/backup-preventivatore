@@ -12,6 +12,7 @@ type QuoteHeaderQuote = {
   job_address: string | null
   issue_date: string | null
   install_time: string | null
+  delivery_weeks: string | null
   validity_days: number | null
   vat: '22' | '10' | '4'
   shipping_included?: boolean | null
@@ -26,6 +27,7 @@ type QuoteHeaderField =
   | 'job_address'
   | 'issue_date'
   | 'install_time'
+  | 'delivery_weeks'
   | 'validity_days'
   | 'shipping_included'
 
@@ -170,13 +172,24 @@ export function QuoteHeaderSection({
             />
           </div>
           <div>
-            <div className="text-xs text-gray-500">Termine di completamento</div>
+            <div className="text-xs text-gray-500">Tempi di consegna</div>
             <input
               className="input"
               placeholder="es. 6-8 settimane"
               value={quote.install_time ?? defaultInstallTime}
               onChange={(e) => updateField('install_time', (e.target.value || defaultInstallTime) as any)}
             />
+          </div>
+          <div>
+            <div className="text-xs text-gray-500">Tempi di consegna (testo termini)</div>
+            <input
+              type="text"
+              className="input"
+              placeholder="es. 4 a 10 settimane"
+              value={quote.delivery_weeks ?? ''}
+              onChange={(e) => updateField('delivery_weeks', e.target.value || null)}
+            />
+            <div className="text-[11px] text-gray-400 mt-0.5">Compare nel testo "I tempi di consegna variano da <b>X</b> dal ricevimento…"</div>
           </div>
           <div>
             <div>

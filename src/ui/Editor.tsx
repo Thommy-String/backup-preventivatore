@@ -38,6 +38,7 @@ type Quote = {
   created_at: string | null
   issue_date: string | null
   install_time: string | null
+  delivery_weeks: string | null
   shipping_included?: boolean | null
   total_mq: number | null
   profile_system: string | null
@@ -742,6 +743,7 @@ export default function Editor() {
         quoteNumber: quote.number ?? null,
         issueDate: quote.issue_date || new Date().toISOString().slice(0, 10),
         installTime: quote.install_time || null,
+        deliveryWeeks: quote.delivery_weeks || null,
         totalMq: typeof quote.total_mq === 'number' ? quote.total_mq : null,
         profileSystem: quote.profile_system || null,
         vatRateLabel: `IVA ${quote.vat ?? '22'}%`,

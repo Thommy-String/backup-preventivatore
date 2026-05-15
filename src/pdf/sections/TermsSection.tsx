@@ -25,6 +25,7 @@ type TermsSectionProps = {
   theme?: PDFTheme | null
   structuredTerms: TermsDocument | null
   terms?: string | null
+  deliveryWeeks?: string | null
   supplyOnlyPlan: SupplyOnlyPlan
   paymentPlanColumns: TermsColumn[]
   sharedPaymentNotes: string[]
@@ -55,6 +56,7 @@ export function TermsSection({
   theme,
   structuredTerms,
   terms,
+  deliveryWeeks,
   supplyOnlyPlan,
   paymentPlanColumns,
   sharedPaymentNotes,
@@ -156,11 +158,17 @@ export function TermsSection({
           {(structuredTerms.sections || []).map((section, idx) => (
             <View key={`section-${idx}`} style={s.termsSectionBlock} wrap={false}>
               <Text style={s.termsSectionTitle}>{section.title}</Text>
-              {(section.body || []).map((paragraph, pIdx) => (
-                <Text key={`section-${idx}-p-${pIdx}`} style={s.termsParagraph}>
-                  {paragraph}
-                </Text>
-              ))}
+              {(section.body || []).map((paragraph, pIdx) => {
+                // Se siamo nella sezione Consegna e l'utente ha personalizzato i tempi, sostituiamo
+                const text = (section.title === 'Consegna' && deliveryWeeks)
+                  ? paragraph.replace('4 a 10 settimane', deliveryWeeks)
+                  : paragraph
+                return (
+                  <Text key={`section-${idx}-p-${pIdx}`} style={s.termsParagraph}>
+                    {text}
+                  </Text>
+                )
+              })}
             </View>
           ))}
 

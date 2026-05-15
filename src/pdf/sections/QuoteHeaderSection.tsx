@@ -90,7 +90,7 @@ export function QuoteHeaderSection({
             <Text style={{ fontSize: 12, fontWeight: 700, color: '#111827', marginTop: 2 }}>{safeText(quoteNumber, '-')}</Text>
             <Text style={{ fontSize: 9, color: '#374151', marginTop: 5 }}>Emesso: {formatISODate(issueDate)}</Text>
             <Text style={{ fontSize: 9, color: '#374151', marginTop: 1 }}>Validità: {safeText(validityLabel)}</Text>
-            <Text style={{ fontSize: 9, color: '#374151', marginTop: 1 }}>Tempi di produzione: {safeText(installTime)}</Text>
+            <Text style={{ fontSize: 9, color: '#374151', marginTop: 1 }}>Tempi di consegna: {safeText(installTime)}</Text>
           </View>
         </View>
 
@@ -166,8 +166,8 @@ export function QuoteHeaderSection({
               <Text style={{ fontSize: 8, color: '#9ca3af' }}>Validità</Text>
               <Text style={{ fontSize: 8.5, color: '#374151', fontWeight: 600 }}>{safeText(validityLabel)}</Text>
             </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 8, color: '#9ca3af' }}>Completamento</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 0 }}>
+              <Text style={{ fontSize: 8, color: '#9ca3af' }}>Tempi di consegna</Text>
               <Text style={{ fontSize: 8.5, color: '#374151', fontWeight: 600 }}>{safeText(installTime)}</Text>
             </View>
           </View>

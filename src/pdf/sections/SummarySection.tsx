@@ -106,8 +106,8 @@ export function SummarySection({
         <View style={{ marginTop: 2, borderTopWidth: 1, borderTopColor: '#e5e7eb', borderStyle: 'solid', paddingTop: 8 }}>
           {/* Subtotale */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8, marginBottom: hasDiscount ? 4 : 0 }}>
-            <Text style={{ fontSize: 9, color: '#9ca3af' }}>Subtotale (IVA esclusa)</Text>
-            <Text style={{ fontSize: 9, color: '#9ca3af' }}>{euro(originalTotal)}</Text>
+            <Text style={{ fontSize: 12, fontWeight: 600, color: '#d1d5db' }}>Subtotale (IVA esclusa)</Text>
+            <Text style={{ fontSize: 12, fontWeight: 600, color: '#d1d5db' }}>{euro(originalTotal)}</Text>
           </View>
 
           {/* Sconto */}
@@ -244,8 +244,8 @@ export function SummarySection({
             <View style={{ marginTop: 2, borderTopWidth: 1, borderTopColor: '#e5e7eb', borderStyle: 'solid', paddingTop: 8 }}>
               {/* Subtotale */}
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8, marginBottom: hasDiscount ? 4 : 0 }}>
-                <Text style={{ fontSize: 9, color: '#9ca3af' }}>Subtotale (IVA esclusa)</Text>
-                <Text style={{ fontSize: 9, color: '#9ca3af' }}>{euro(originalTotal)}</Text>
+                <Text style={{ fontSize: 12, fontWeight: 600, color: '#d1d5db' }}>Subtotale (IVA esclusa)</Text>
+                <Text style={{ fontSize: 12, fontWeight: 600, color: '#d1d5db' }}>{euro(originalTotal)}</Text>
               </View>
 
               {/* Sconto */}

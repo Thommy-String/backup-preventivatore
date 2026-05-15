@@ -20,6 +20,7 @@ export type QuotePDFProps = {
     quoteNumber?: string | null
     issueDate?: string | null
     installTime?: string | null
+    deliveryWeeks?: string | null
     showShippingIncluded?: boolean | null
     totalMq?: number | null
     profileSystem?: string | null
@@ -57,6 +58,7 @@ export default function QuotePDF(props: QuotePDFProps) {
         quoteNumber,
         issueDate,
         installTime,
+        deliveryWeeks,
         showShippingIncluded,
         customer,
         catTotals,
@@ -179,6 +181,7 @@ export default function QuotePDF(props: QuotePDFProps) {
                     theme={pdfTheme ?? null}
                     structuredTerms={structuredTerms}
                     terms={terms}
+                    deliveryWeeks={deliveryWeeks}
                     supplyOnlyPlan={supplyOnlyPlan}
                     paymentPlanColumns={paymentPlanColumns}
                     sharedPaymentNotes={sharedPaymentNotes}

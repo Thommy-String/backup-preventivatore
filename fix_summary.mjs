@@ -104,7 +104,7 @@ if (sections.length === 2) {
             </Text>
             {showIncl && (
               <Text style={{ fontSize: 8, color: '#9ca3af', marginTop: 2 }}>
-                IVA {vatPct}% · di cui {euro(displayedFinal * (vatPct / 100))}
+                IVA {vatPct}% · {euro(displayedFinal * (vatPct / 100))}
               </Text>
             )}
           </View>
